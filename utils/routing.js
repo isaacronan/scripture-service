@@ -1,3 +1,5 @@
+const jwt = require('express-jwt');
+
 const checkResultsAndRespond = (res) => (results) => {
     if (results.length) {
         res.json(results);
@@ -6,6 +8,9 @@ const checkResultsAndRespond = (res) => (results) => {
     }
 };
 
+const authenticate = jwt({ secret: 'secret2' });
+
 module.exports = {
-    checkResultsAndRespond
+    checkResultsAndRespond,
+    authenticate
 };

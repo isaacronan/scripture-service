@@ -1,6 +1,7 @@
 const { getCollection } = require('../utils/db');
 
 const verses = getCollection('verses');
+const users = getCollection('users');
 
 const getNextIssue = ({ lastBook, lastChapter, lastVerse, verseDosage, bookPool }) => new Promise(async (resolve) => {
     const pipeline = [
@@ -22,6 +23,13 @@ const getNextIssue = ({ lastBook, lastChapter, lastVerse, verseDosage, bookPool 
     });
 });
 
+const getSubscriptions = (username) => new Promise(async (resolve) => {
+    (await users).find({ username }, { projection: { _id: 0, subscriptions: 1 }}).toArray((_err, docs) => {
+        resolve(docs);
+    });
+});
+
 module.exports = {
-    getNextIssue
+    getNextIssue,
+    getSubscriptions
 };
