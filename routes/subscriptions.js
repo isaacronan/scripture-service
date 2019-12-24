@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authenticate } = require('../utils/routing');
-const { getNextIssue, getSubscriptions } = require('../queries/subscriptions');
+const { getNextIssue, getSubscriptions, updateSubscriptions } = require('../queries/subscriptions');
 
 router.use(express.json());
 
@@ -10,6 +10,18 @@ router.get('/', authenticate, (req, res) => {
     const { username } = req.user;
     getSubscriptions(username).then((docs) => {
         res.json(docs[0].subscriptions);
+    });
+});
+
+router.put('/', authenticate, (req, res) => {
+    const { username } = req.user;
+    const subscriptions = req.body;
+    updateSubscriptions(username, subscriptions).then((numUpdated) => {
+        if (numUpdated) {
+            res.json({ message: 'Subscriptions updated.' });
+        } else {
+            res.status(400).json({ error: 'No subscriptions updated.' });
+        }
     });
 });
 
