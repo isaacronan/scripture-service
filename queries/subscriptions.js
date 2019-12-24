@@ -29,7 +29,14 @@ const getSubscriptions = (username) => new Promise(async (resolve) => {
     });
 });
 
+const updateSubscriptions = (username, subscriptions) => new Promise(async (resolve) => {
+    (await users).updateOne({ username }, { $set: { subscriptions } }).then(({ result }) => {
+        resolve(result.n);
+    });
+});
+
 module.exports = {
     getNextIssue,
-    getSubscriptions
+    getSubscriptions,
+    updateSubscriptions
 };
