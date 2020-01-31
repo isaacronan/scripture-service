@@ -9,7 +9,8 @@ router.use(express.json());
 router.get('/', authenticate, (req, res) => {
     const { username } = req.user;
     getSubscriptions(username).then((docs) => {
-        res.json(docs[0].subscriptions);
+        const subscriptions = docs[0].subscriptions || [];
+        res.json(subscriptions);
     });
 });
 
@@ -28,7 +29,8 @@ router.put('/', authenticate, (req, res) => {
 router.get('/issues', authenticate, (req, res) => {
     const { username } = req.user;
     getSubscriptions(username).then((docs) => {
-        Promise.all(docs[0].subscriptions.map(subscription => getNextIssue(subscription))).then((results) => {
+        const subscriptions = docs[0].subscriptions || [];
+        Promise.all(subscriptions.map(subscription => getNextIssue(subscription))).then((results) => {
             res.json(results);
         });
     });
