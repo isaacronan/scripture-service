@@ -1,4 +1,7 @@
-const jwt = require('express-jwt');
+const passport = require('passport');
+const jwt = require('jsonwebtoken');
+
+const SECRET = 'secret';
 
 const checkResultsAndRespond = (res) => (results) => {
     if (results.length) {
@@ -8,9 +11,13 @@ const checkResultsAndRespond = (res) => (results) => {
     }
 };
 
-const authenticate = jwt({ secret: 'secret2' });
+const sign = payload => jwt.sign(payload, SECRET, { expiresIn: 30 });
+
+const authenticate = passport.authenticate('jwt', { session: false });
 
 module.exports = {
+    SECRET,
     checkResultsAndRespond,
+    sign,
     authenticate
 };
