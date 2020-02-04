@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { authenticate } = require('../utils/routing');
+const { authenticate, subscriptionsFormatIsValid } = require('../utils/routing');
 const { getNextIssue, getSubscriptions, updateSubscriptions } = require('../queries/subscriptions');
 
 router.use(express.json());
@@ -17,6 +17,11 @@ router.get('/', authenticate, (req, res) => {
 router.put('/', authenticate, (req, res) => {
     const { username } = req.user;
     const subscriptions = req.body;
+
+    if (!subscriptionsFormatIsValid(subscriptions)) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    }
+
     updateSubscriptions(username, subscriptions).then((numUpdated) => {
         if (numUpdated) {
             res.json({ message: 'Subscriptions updated.' });
