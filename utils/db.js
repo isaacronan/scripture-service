@@ -1,5 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
-const client = new MongoClient('mongodb://database:27017', { useUnifiedTopology: true });
+const client = new MongoClient(`mongodb://${process.env.DBHOST}:27017`, { useUnifiedTopology: true });
 const DBNAME = 'scripture';
 
 let db;
