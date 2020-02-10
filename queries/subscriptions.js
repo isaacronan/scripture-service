@@ -4,7 +4,9 @@ const { getCollection } = require('../utils/db');
 const verses = getCollection('verses');
 const subscriptions = getCollection('subscriptions');
 
-const getNextIssue = ({ lastBook, lastChapter, lastVerse, verseDosage, bookPool }) => new Promise(async (resolve) => {
+const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
+    const { subscription } = await getSubscription(username, id);
+    const { lastBook, lastChapter, lastVerse, verseDosage, bookPool } = subscription;
     const pipeline = [
         { $match: { $and: [
             { booknumber: { $in: bookPool }},
@@ -30,6 +32,12 @@ const getSubscriptions = (username) => new Promise(async (resolve) => {
     });
 });
 
+const getSubscription = (username, id) => new Promise(async (resolve) => {
+    (await subscriptions).find({ username, id }, { projection: { _id: 0, subscription: 1 }}).toArray((_err, docs) => {
+        resolve(docs[0]);
+    });
+});
+
 const updateSubscription = (username, subscription, id) => new Promise(async (resolve) => {
     (await subscriptions).updateOne({ username, id }, { $set: { subscription } }).then(({ result }) => {
         resolve(result.n);
@@ -45,13 +53,12 @@ const createSubscription = (username, subscription) => new Promise(async (resolv
 
 const deleteSubscription = (username, id) => new Promise(async (resolve) => {
     (await subscriptions).remove({ username, id }).then(({ result }) => {
-        console.log(result);
         resolve(result.n);
     });
 });
 
 module.exports = {
-    getNextIssue,
+    getCurrentIssue,
     getSubscriptions,
     updateSubscription,
     createSubscription,

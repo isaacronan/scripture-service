@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authenticate, subscriptionFormatIsValid } = require('../utils/routing');
-const { getNextIssue, getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
+const { getCurrentIssue, getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());
 
@@ -66,10 +66,19 @@ router.get('/issues', authenticate, (req, res) => {
     const { username } = req.user;
     getSubscriptions(username).then((docs) => {
         const subscriptions = docs[0].subscriptions || [];
-        Promise.all(subscriptions.map(subscription => getNextIssue(subscription))).then((results) => {
+        Promise.all(subscriptions.map(subscription => getCurrentIssue(subscription))).then((results) => {
             res.json(results);
         });
     });
+});
+
+router.get('/:id/issue', authenticate, (req, res) => {
+    const { username } = req.user;
+    const { id } = req.params;
+    getCurrentIssue(username, id).then((result) => {
+        res.json(result);
+    })
+    // return pointer for next
 });
 
 module.exports = router;
