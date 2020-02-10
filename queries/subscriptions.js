@@ -1,7 +1,8 @@
+const uuid = require('uuid');
 const { getCollection } = require('../utils/db');
 
 const verses = getCollection('verses');
-const users = getCollection('users');
+const subscriptions = getCollection('subscriptions');
 
 const getNextIssue = ({ lastBook, lastChapter, lastVerse, verseDosage, bookPool }) => new Promise(async (resolve) => {
     const pipeline = [
@@ -24,13 +25,27 @@ const getNextIssue = ({ lastBook, lastChapter, lastVerse, verseDosage, bookPool 
 });
 
 const getSubscriptions = (username) => new Promise(async (resolve) => {
-    (await users).find({ username }, { projection: { _id: 0, subscriptions: 1 }}).toArray((_err, docs) => {
+    (await subscriptions).find({ username }, { projection: { _id: 0, subscription: 1, id: 1 }}).toArray((_err, docs) => {
         resolve(docs);
     });
 });
 
-const updateSubscriptions = (username, subscriptions) => new Promise(async (resolve) => {
-    (await users).updateOne({ username }, { $set: { subscriptions } }).then(({ result }) => {
+const updateSubscription = (username, subscription, id) => new Promise(async (resolve) => {
+    (await subscriptions).updateOne({ username, id }, { $set: { subscription } }).then(({ result }) => {
+        resolve(result.n);
+    });
+});
+
+const createSubscription = (username, subscription) => new Promise(async (resolve) => {
+    const id = uuid.v4();
+    (await subscriptions).insertOne({ username, subscription, id }).then(() => {
+        resolve(id);
+    });
+});
+
+const deleteSubscription = (username, id) => new Promise(async (resolve) => {
+    (await subscriptions).remove({ username, id }).then(({ result }) => {
+        console.log(result);
         resolve(result.n);
     });
 });
@@ -38,5 +53,7 @@ const updateSubscriptions = (username, subscriptions) => new Promise(async (reso
 module.exports = {
     getNextIssue,
     getSubscriptions,
-    updateSubscriptions
+    updateSubscription,
+    createSubscription,
+    deleteSubscription
 };
