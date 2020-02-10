@@ -6,23 +6,31 @@ const subscriptions = getCollection('subscriptions');
 
 const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
     const { subscription } = await getSubscription(username, id);
-    const { lastBook, lastChapter, lastVerse, verseDosage, bookPool } = subscription;
+    const { currentBook, currentChapter, currentVerse, verseDosage, bookPool } = subscription;
     const pipeline = [
         { $match: { $and: [
             { booknumber: { $in: bookPool }},
             { $or: [
-                { booknumber: { $gt: lastBook }},
-                { booknumber: lastBook, chapternumber: { $gt: lastChapter }},
-                { booknumber: lastBook, chapternumber: lastChapter, versenumber: { $gt: lastVerse }},
+                { booknumber: { $gt: currentBook }},
+                { booknumber: currentBook, chapternumber: { $gt: currentChapter }},
+                { booknumber: currentBook, chapternumber: currentChapter, versenumber: { $gte: currentVerse }},
             ]}
         ]}},
         { $sort: { booknumber: 1, chapternumber: 1, versenumber: 1 }},
-        { $limit:  verseDosage },
+        { $limit:  verseDosage + 1 },
         { $project: { _id: false }}
     ];
     
     (await verses).aggregate(pipeline).toArray((_err, docs) => {
-        resolve(docs);
+        const currentIssue = docs.slice(0, verseDosage);
+        const nextIssue = docs.length === verseDosage + 1 ? {
+            currentBook: docs[verseDosage].booknumber,
+            currentChapter: docs[verseDosage].chapternumber,
+            currentVerse: docs[verseDosage].versenumber,
+            bookPool,
+            verseDosage
+        } : null;
+        resolve({ currentIssue, nextIssue });
     });
 });
 
