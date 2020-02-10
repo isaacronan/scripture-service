@@ -77,8 +77,7 @@ router.get('/:id/issue', authenticate, (req, res) => {
     const { id } = req.params;
     getCurrentIssue(username, id).then((result) => {
         res.json(result);
-    })
-    // return pointer for next
+    });
 });
 
 module.exports = router;

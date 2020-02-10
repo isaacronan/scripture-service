@@ -17,9 +17,9 @@ const authenticate = passport.authenticate('jwt', { session: false });
 
 const subscriptionFormatIsValid = (subscription) =>
     !!subscription &&
-    typeof subscription.lastBook === 'number' &&
-    typeof subscription.lastChapter === 'number' &&
-    typeof subscription.lastVerse === 'number' &&
+    typeof subscription.currentBook === 'number' &&
+    typeof subscription.currentChapter === 'number' &&
+    typeof subscription.currentVerse === 'number' &&
     typeof subscription.verseDosage === 'number' &&
     Array.isArray(subscription.bookPool) &&
     subscription.bookPool.reduce((acc, bookNumber) => acc && typeof bookNumber === 'number', true)
