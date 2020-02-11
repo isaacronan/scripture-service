@@ -22,6 +22,11 @@ router.post('/', authenticate, (req, res) => {
         return;
     }
 
+    if (!subscription.name || !subscription.verseDosage || !subscription.bookPool) {
+        res.status(400).json({ error: 'Request is missing required fields.' });
+        return;
+    }
+
     createSubscription(username, subscription).then((id) => {
         if (id) {
             res.json({ message: 'Subscription created.', id });
