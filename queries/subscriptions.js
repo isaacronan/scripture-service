@@ -5,8 +5,9 @@ const verses = getCollection('verses');
 const subscriptions = getCollection('subscriptions');
 
 const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
-    const { subscription } = await getSubscription(username, id);
-    const { currentBook, currentChapter, currentVerse, verseDosage, bookPool } = subscription;
+    const { subscription, currentIssue } = await getSubscription(username, id);
+    const { verseDosage, bookPool } = subscription;
+    const { currentBook, currentChapter, currentVerse } = currentIssue;
     const pipeline = [
         { $match: { $and: [
             { booknumber: { $in: bookPool }},
@@ -22,39 +23,43 @@ const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
     ];
     
     (await verses).aggregate(pipeline).toArray((_err, docs) => {
-        const currentIssue = docs.slice(0, verseDosage);
+        const content = docs.slice(0, verseDosage);
         const nextIssue = docs.length === verseDosage + 1 ? {
             currentBook: docs[verseDosage].booknumber,
             currentChapter: docs[verseDosage].chapternumber,
-            currentVerse: docs[verseDosage].versenumber,
-            bookPool,
-            verseDosage
+            currentVerse: docs[verseDosage].versenumber
         } : null;
-        resolve({ currentIssue, nextIssue });
+        resolve({ currentIssue, nextIssue, subscription, content });
     });
 });
 
 const getSubscriptions = (username) => new Promise(async (resolve) => {
-    (await subscriptions).find({ username }, { projection: { _id: 0, subscription: 1, id: 1 }}).toArray((_err, docs) => {
+    (await subscriptions).find({ username }, { projection: { _id: 0, subscription: 1, currentIssue: 1, id: 1 }}).toArray((_err, docs) => {
         resolve(docs);
     });
 });
 
 const getSubscription = (username, id) => new Promise(async (resolve) => {
-    (await subscriptions).find({ username, id }, { projection: { _id: 0, subscription: 1 }}).toArray((_err, docs) => {
+    (await subscriptions).find({ username, id }, { projection: { _id: 0, subscription: 1, currentIssue: 1 }}).toArray((_err, docs) => {
         resolve(docs[0]);
     });
 });
 
-const updateSubscription = (username, subscription, id) => new Promise(async (resolve) => {
-    (await subscriptions).updateOne({ username, id }, { $set: { subscription } }).then(({ result }) => {
+const updateSubscription = (username, id, { subscription, currentIssue }) => new Promise(async (resolve) => {
+    (await subscriptions).updateOne({ username, id }, { $set: { subscription, currentIssue }}).then(({ result }) => {
         resolve(result.n);
     });
 });
 
 const createSubscription = (username, subscription) => new Promise(async (resolve) => {
     const id = uuid.v4();
-    (await subscriptions).insertOne({ username, subscription, id }).then(() => {
+    const currentIssue = {
+        currentBook: subscription.bookPool[0],
+        currentChapter: 1,
+        currentVerse: 1
+    };
+    
+    (await subscriptions).insertOne({ username, subscription, id, currentIssue }).then(() => {
         resolve(id);
     });
 });

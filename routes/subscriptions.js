@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { authenticate, subscriptionFormatIsValid } = require('../utils/routing');
+const { authenticate, subscriptionFormatIsValid, issueFormatIsValid } = require('../utils/routing');
 const { getCurrentIssue, getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());
@@ -9,8 +9,7 @@ router.use(express.json());
 router.get('/', authenticate, (req, res) => {
     const { username } = req.user;
     getSubscriptions(username).then((docs) => {
-        const subscriptions = docs.map(({ subscription, id }) => ({ ...subscription, id }));
-        res.json(subscriptions);
+        res.json(docs);
     });
 });
     
@@ -20,6 +19,7 @@ router.post('/', authenticate, (req, res) => {
 
     if (!subscriptionFormatIsValid(subscription)) {
         res.status(400).json({ error: 'Request format is invalid.' });
+        return;
     }
 
     createSubscription(username, subscription).then((id) => {
@@ -33,14 +33,15 @@ router.post('/', authenticate, (req, res) => {
 
 router.put('/:id', authenticate, (req, res) => {
     const { username } = req.user;
-    const subscription = req.body;
+    const { subscription, currentIssue } = req.body;
     const { id } = req.params;
 
-    if (!subscriptionFormatIsValid(subscription)) {
+    if (!subscriptionFormatIsValid(subscription) || !issueFormatIsValid(currentIssue)) {
         res.status(400).json({ error: 'Request format is invalid.' });
+        return;
     }
 
-    updateSubscription(username, subscription, id).then((numUpdated) => {
+    updateSubscription(username, id, { subscription, currentIssue }).then((numUpdated) => {
         if (numUpdated) {
             res.json({ message: 'Subscription updated.' });
         } else {
@@ -62,17 +63,7 @@ router.delete('/:id', authenticate, (req, res) => {
     });
 });
 
-router.get('/issues', authenticate, (req, res) => {
-    const { username } = req.user;
-    getSubscriptions(username).then((docs) => {
-        const subscriptions = docs[0].subscriptions || [];
-        Promise.all(subscriptions.map(subscription => getCurrentIssue(subscription))).then((results) => {
-            res.json(results);
-        });
-    });
-});
-
-router.get('/:id/issue', authenticate, (req, res) => {
+router.get('/:id', authenticate, (req, res) => {
     const { username } = req.user;
     const { id } = req.params;
     getCurrentIssue(username, id).then((result) => {
