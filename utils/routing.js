@@ -16,11 +16,18 @@ const sign = payload => jwt.sign(payload, SECRET, { expiresIn: 30 * 60 });
 const authenticate = passport.authenticate('jwt', { session: false });
 
 const subscriptionFormatIsValid = (subscription) =>
-    !!subscription &&
-    typeof subscription.verseDosage === 'number' &&
-    Array.isArray(subscription.bookPool) &&
-    subscription.bookPool.length > 0 &&
-    subscription.bookPool.reduce((acc, bookNumber) => acc && typeof bookNumber === 'number', true);
+    !!subscription && (
+        !subscription.verseDosage ||
+        typeof subscription.verseDosage === 'number'
+    ) && (
+        !subscription.bookPool ||
+        Array.isArray(subscription.bookPool) &&
+        subscription.bookPool.length > 0 &&
+        subscription.bookPool.reduce((acc, bookNumber) => acc && typeof bookNumber === 'number', true)
+    ) && (
+        !subscription.currentIssue ||
+        issueFormatIsValid(subscription.currentIssue)
+    );
 
 const issueFormatIsValid = (issue) =>
     !!issue &&

@@ -5,8 +5,7 @@ const verses = getCollection('verses');
 const subscriptions = getCollection('subscriptions');
 
 const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
-    const { subscription, currentIssue } = await getSubscription(username, id);
-    const { verseDosage, bookPool } = subscription;
+    const { verseDosage, bookPool, currentIssue } = await getSubscription(username, id);
     const { currentBook, currentChapter, currentVerse } = currentIssue;
     const pipeline = [
         { $match: { $and: [
@@ -29,24 +28,24 @@ const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
             currentChapter: docs[verseDosage].chapternumber,
             currentVerse: docs[verseDosage].versenumber
         } : null;
-        resolve({ currentIssue, nextIssue, subscription, content });
+        resolve({ verseDosage, bookPool, currentIssue, nextIssue, content });
     });
 });
 
 const getSubscriptions = (username) => new Promise(async (resolve) => {
-    (await subscriptions).find({ username }, { projection: { _id: 0, subscription: 1, currentIssue: 1, id: 1 }}).toArray((_err, docs) => {
+    (await subscriptions).find({ username }, { projection: { _id: 0, username: 0 }}).toArray((_err, docs) => {
         resolve(docs);
     });
 });
 
 const getSubscription = (username, id) => new Promise(async (resolve) => {
-    (await subscriptions).find({ username, id }, { projection: { _id: 0, subscription: 1, currentIssue: 1 }}).toArray((_err, docs) => {
+    (await subscriptions).find({ username, id }, { projection: { _id: 0, username: 0, id: 0 }}).toArray((_err, docs) => {
         resolve(docs[0]);
     });
 });
 
-const updateSubscription = (username, id, { subscription, currentIssue }) => new Promise(async (resolve) => {
-    (await subscriptions).updateOne({ username, id }, { $set: { subscription, currentIssue }}).then(({ result }) => {
+const updateSubscription = (username, id, subscription) => new Promise(async (resolve) => {
+    (await subscriptions).updateOne({ username, id }, { $set: { ...subscription }}).then(({ result }) => {
         resolve(result.n);
     });
 });
@@ -59,7 +58,7 @@ const createSubscription = (username, subscription) => new Promise(async (resolv
         currentVerse: 1
     };
     
-    (await subscriptions).insertOne({ username, subscription, id, currentIssue }).then(() => {
+    (await subscriptions).insertOne({ username, id, ...subscription, currentIssue }).then(() => {
         resolve(id);
     });
 });
