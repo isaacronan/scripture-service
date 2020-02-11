@@ -17,17 +17,22 @@ const authenticate = passport.authenticate('jwt', { session: false });
 
 const subscriptionFormatIsValid = (subscription) =>
     !!subscription &&
-    typeof subscription.currentBook === 'number' &&
-    typeof subscription.currentChapter === 'number' &&
-    typeof subscription.currentVerse === 'number' &&
     typeof subscription.verseDosage === 'number' &&
     Array.isArray(subscription.bookPool) &&
-    subscription.bookPool.reduce((acc, bookNumber) => acc && typeof bookNumber === 'number', true)
+    subscription.bookPool.length > 0 &&
+    subscription.bookPool.reduce((acc, bookNumber) => acc && typeof bookNumber === 'number', true);
+
+const issueFormatIsValid = (issue) =>
+    !!issue &&
+    typeof issue.currentBook === 'number' &&
+    typeof issue.currentChapter === 'number' &&
+    typeof issue.currentVerse === 'number';
 
 module.exports = {
     SECRET,
     checkResultsAndRespond,
     sign,
     authenticate,
-    subscriptionFormatIsValid
+    subscriptionFormatIsValid,
+    issueFormatIsValid
 };
