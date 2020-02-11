@@ -5,7 +5,7 @@ const verses = getCollection('verses');
 const subscriptions = getCollection('subscriptions');
 
 const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
-    const { verseDosage, bookPool, currentIssue } = await getSubscription(username, id);
+    const { verseDosage, bookPool, currentIssue, name } = await getSubscription(username, id);
     const { currentBook, currentChapter, currentVerse } = currentIssue;
     const pipeline = [
         { $match: { $and: [
@@ -28,7 +28,7 @@ const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
             currentChapter: docs[verseDosage].chapternumber,
             currentVerse: docs[verseDosage].versenumber
         } : null;
-        resolve({ verseDosage, bookPool, currentIssue, nextIssue, content });
+        resolve({ name, verseDosage, bookPool, currentIssue, nextIssue, content });
     });
 });
 
