@@ -1,35 +1,18 @@
 const uuid = require('uuid');
-const { getCollection } = require('../utils/db');
+const { getCollection, constructIssuePipeline, constructIssueResponse } = require('../utils/db');
 
 const verses = getCollection('verses');
 const subscriptions = getCollection('subscriptions');
 
-const getCurrentIssue = (username, id) => new Promise(async (resolve) => {
-    const { verseDosage, bookPool, currentIssue, name } = await getSubscription(username, id);
-    const { currentBook, currentChapter, currentVerse } = currentIssue;
-    const pipeline = [
-        { $match: { $and: [
-            { booknumber: { $in: bookPool }},
-            { $or: [
-                { booknumber: { $gt: currentBook }},
-                { booknumber: currentBook, chapternumber: { $gt: currentChapter }},
-                { booknumber: currentBook, chapternumber: currentChapter, versenumber: { $gte: currentVerse }},
-            ]}
-        ]}},
-        { $sort: { booknumber: 1, chapternumber: 1, versenumber: 1 }},
-        { $limit:  verseDosage + 1 },
-        { $project: { _id: false }}
-    ];
-    
-    (await verses).aggregate(pipeline).toArray((_err, docs) => {
-        const content = docs.slice(0, verseDosage);
-        const nextIssue = docs.length === verseDosage + 1 ? {
-            currentBook: docs[verseDosage].booknumber,
-            currentChapter: docs[verseDosage].chapternumber,
-            currentVerse: docs[verseDosage].versenumber
-        } : null;
-        resolve({ name, verseDosage, bookPool, currentIssue, nextIssue, content });
-    });
+const getCurrentIssue = (username, id) => new Promise(async (resolve, reject) => {
+    const subscription = await getSubscription(username, id);
+    if (!subscription) {
+        reject();
+    } else {
+        (await verses).aggregate(constructIssuePipeline(subscription)).toArray((_err, docs) => {
+            resolve(constructIssueResponse(subscription, docs));
+        });
+    }
 });
 
 const getSubscriptions = (username) => new Promise(async (resolve) => {

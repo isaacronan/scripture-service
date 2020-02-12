@@ -19,6 +19,40 @@ const getCollection = (collection) => new Promise(async (resolve) => {
     resolve(db.collection(collection));
 });
 
+const constructIssuePipeline = (subscription) => {
+    const { verseDosage, bookPool, currentIssue, name } = subscription;
+    const { currentBook, currentChapter, currentVerse } = currentIssue;
+    const pipeline = [
+        { $match: { $and: [
+            { booknumber: { $in: bookPool }},
+            { $or: [
+                { booknumber: { $gt: currentBook }},
+                { booknumber: currentBook, chapternumber: { $gt: currentChapter }},
+                { booknumber: currentBook, chapternumber: currentChapter, versenumber: { $gte: currentVerse }},
+            ]}
+        ]}},
+        { $sort: { booknumber: 1, chapternumber: 1, versenumber: 1 }},
+        { $limit:  verseDosage + 1 },
+        { $project: { _id: false }}
+    ];
+
+    return pipeline;
+};
+
+const constructIssueResponse = (subscription, docs) => {
+    const { verseDosage, bookPool, currentIssue, name } = subscription;
+    const content = docs.slice(0, verseDosage);
+    const nextIssue = docs.length === verseDosage + 1 ? {
+        currentBook: docs[verseDosage].booknumber,
+        currentChapter: docs[verseDosage].chapternumber,
+        currentVerse: docs[verseDosage].versenumber
+    } : null;
+
+    return { name, verseDosage, bookPool, currentIssue, nextIssue, content };
+}
+
 module.exports = {
-    getCollection
+    getCollection,
+    constructIssuePipeline,
+    constructIssueResponse
 };

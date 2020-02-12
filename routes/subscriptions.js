@@ -70,6 +70,8 @@ router.get('/:id', authenticate, (req, res) => {
     const { id } = req.params;
     getCurrentIssue(username, id).then((result) => {
         res.json(result);
+    }, () => {
+        res.status(404).json({ error: 'No subscription found.' });
     });
 });
 
