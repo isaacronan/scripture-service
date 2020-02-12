@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { authenticate, subscriptionFormatIsValid } = require('../utils/routing');
+const { authenticate, updateSubscriptionSchema, createSubscriptionSchema} = require('../utils/routing');
 const { getCurrentIssue, getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());
@@ -13,46 +13,43 @@ router.get('/', authenticate, (req, res) => {
     });
 });
     
-router.post('/', authenticate, (req, res) => {
+router.post('/', authenticate, async (req, res) => {
     const { username } = req.user;
     const subscription = req.body;
 
-    if (!subscriptionFormatIsValid(subscription)) {
+    const isValid = await createSubscriptionSchema.isValid(subscription);
+    
+    if (!isValid) {
         res.status(400).json({ error: 'Request format is invalid.' });
-        return;
+    } else {
+        createSubscription(username, createSubscriptionSchema.cast(subscription)).then((id) => {
+            if (id) {
+                res.json({ message: 'Subscription created.', id });
+            } else {
+                res.status(400).json({ error: 'Subscription not created.' });
+            }
+        });
     }
-
-    if (!subscription.name || !subscription.verseDosage || !subscription.bookPool) {
-        res.status(400).json({ error: 'Request is missing required fields.' });
-        return;
-    }
-
-    createSubscription(username, subscription).then((id) => {
-        if (id) {
-            res.json({ message: 'Subscription created.', id });
-        } else {
-            res.status(400).json({ error: 'Subscription not created.' });
-        }
-    });
 });
 
-router.put('/:id', authenticate, (req, res) => {
+router.put('/:id', authenticate, async (req, res) => {
     const { username } = req.user;
     const subscription = req.body;
     const { id } = req.params;
 
-    if (!subscriptionFormatIsValid(subscription)) {
-        res.status(400).json({ error: 'Request format is invalid.' });
-        return;
-    }
+    const isValid = await updateSubscriptionSchema.isValid(subscription);
 
-    updateSubscription(username, id, subscription).then((numUpdated) => {
-        if (numUpdated) {
-            res.json({ message: 'Subscription updated.' });
-        } else {
-            res.status(400).json({ error: 'Subscription not updated.' });
-        }
-    });
+    if (!isValid) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    } else {
+        updateSubscription(username, id, updateSubscriptionSchema.cast(subscription)).then((numUpdated) => {
+            if (numUpdated) {
+                res.json({ message: 'Subscription updated.' });
+            } else {
+                res.status(400).json({ error: 'Subscription not updated.' });
+            }
+        });
+    }
 });
 
 router.delete('/:id', authenticate, (req, res) => {

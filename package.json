@@ -16,7 +16,8 @@
     "mongodb": "^3.3.3",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
-    "uuid": "^3.4.0"
+    "uuid": "^3.4.0",
+    "yup": "^0.28.1"
   },
   "devDependencies": {
     "nodemon": "^1.19.4"
