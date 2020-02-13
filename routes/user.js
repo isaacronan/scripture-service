@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword } = require('../queries/user');
+const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword, deleteUser } = require('../queries/user');
 const { sign, authenticate, credentialsSchema, passwordSchema } = require('../utils/routing');
 
 router.use(express.json());
@@ -73,6 +73,19 @@ router.put('/password', authenticate, async (req, res) => {
             }
         });
     }
+});
+
+router.post('/delete', authenticate, async (req, res) => {
+    const { password } = req.body;
+
+    await deleteRefreshTokens(req.user.username);
+    deleteUser(req.user.username, password).then((numDeleted) => {
+        if (numDeleted) {
+            res.json({ message: 'User successfully deleted.' });
+        } else {
+            res.status(400).json({ message: 'Credentials don\'t match.' });
+        }
+    });
 });
 
 module.exports = router;
