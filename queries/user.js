@@ -48,10 +48,17 @@ const deleteRefreshTokens = (username) => new Promise(async (resolve) => {
     });
 });
 
+const updatePassword = (username, currentPassword, newPassword) => new Promise(async (resolve) => {
+    (await users).updateOne({ username, password: currentPassword }, { $set: { password: newPassword }}).then(({ result }) => {
+        resolve(result.n);
+    });
+});
+
 module.exports = {
     getUserAuthInfo,
     createUserAccount,
     createRefreshToken,
     getRefreshToken,
-    deleteRefreshTokens
+    deleteRefreshTokens,
+    updatePassword
 };
