@@ -1,9 +1,8 @@
 const express = require('express');
-const uuid = require('uuid');
 const router = express.Router();
 
-const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens } = require('../queries/user');
-const { sign, authenticate, credentialsSchema } = require('../utils/routing');
+const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword } = require('../queries/user');
+const { sign, authenticate, credentialsSchema, passwordSchema } = require('../utils/routing');
 
 router.use(express.json());
 
@@ -52,6 +51,25 @@ router.post('/create', async (req, res) => {
                 res.status(400).json({ message: 'Account already exists.' });
             } else {
                 res.json({ message: 'Account created.' });
+            }
+        });
+    }
+});
+
+router.put('/password', authenticate, async (req, res) => {
+    const passwords = req.body;
+
+    const isValid = await passwordSchema.isValid(passwords);
+
+    if (!isValid) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    } else {
+        const { currentPassword, newPassword } = passwordSchema.cast(passwords);
+        updatePassword(req.user.username, currentPassword, newPassword).then((numUpdated) => {
+            if (!numUpdated) {
+                res.status(400).json({ message: 'Credentials don\'t match.' });
+            } else {
+                res.json({ message: 'Password successfully updated.' });
             }
         });
     }

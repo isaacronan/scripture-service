@@ -38,6 +38,11 @@ const credentialsSchema = yup.object().noUnknown().shape({
     password: yup.string().min(1).required(),
 });
 
+const passwordSchema = yup.object().noUnknown().shape({
+    currentPassword: yup.string().min(1).required(),
+    newPassword: yup.string().min(1).required(),
+});
+
 module.exports = {
     SECRET,
     checkResultsAndRespond,
@@ -45,5 +50,6 @@ module.exports = {
     authenticate,
     updateSubscriptionSchema,
     createSubscriptionSchema,
-    credentialsSchema
+    credentialsSchema,
+    passwordSchema
 };
