@@ -3,7 +3,7 @@ const uuid = require('uuid');
 const router = express.Router();
 
 const { getUserAuthInfo, createUserAccount } = require('../queries/user');
-const { sign, authenticate } = require('../utils/routing');
+const { sign, authenticate, credentialsSchema } = require('../utils/routing');
 
 let refreshTokens = [];
 const EXP_TIME_MS = 1 * 60 * 1000;
@@ -47,20 +47,23 @@ router.post('/refresh', (req, res) => {
     }
 });
 
-router.post('/create', (req, res) => {
-    const { username, password } = req.body;
+router.post('/create', async (req, res) => {
+    const credentials = req.body;
 
-    createUserAccount(username, password).then((alreadyExists) => {
-        if (alreadyExists) {
-            res.status(400).json({ message: 'Account already exists.' });
-        } else {
-            res.json({ message: 'Account created.' });
-        }
-    });
-});
+    const isValid = await credentialsSchema.isValid(credentials);
 
-router.get('/secret', authenticate, (req, res) => {
-    res.send(req.user.username);
+    if (!isValid) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    } else {
+        const { username, password } = credentialsSchema.cast(credentials);
+        createUserAccount(username, password).then((alreadyExists) => {
+            if (alreadyExists) {
+                res.status(400).json({ message: 'Account already exists.' });
+            } else {
+                res.json({ message: 'Account created.' });
+            }
+        });
+    }
 });
 
 module.exports = router;

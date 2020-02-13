@@ -33,11 +33,17 @@ const createSubscriptionSchema = yup.object().noUnknown().shape({
     bookPool: yup.array().of(yup.number().integer().positive()).min(1).required()
 });
 
+const credentialsSchema = yup.object().noUnknown().shape({
+    username: yup.string().min(1).required(),
+    password: yup.string().min(1).required(),
+});
+
 module.exports = {
     SECRET,
     checkResultsAndRespond,
     sign,
     authenticate,
     updateSubscriptionSchema,
-    createSubscriptionSchema
+    createSubscriptionSchema,
+    credentialsSchema
 };
