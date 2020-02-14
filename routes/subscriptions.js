@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authenticate, updateSubscriptionSchema, createSubscriptionSchema} = require('../utils/routing');
-const { getCurrentIssue, getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
+const { getCurrentIssue, getSubscriptions, getSubscription, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());
 
@@ -65,14 +65,18 @@ router.delete('/:id', authenticate, (req, res) => {
     });
 });
 
-router.get('/:id', authenticate, (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
     const { username } = req.user;
     const { id } = req.params;
-    getCurrentIssue(username, id).then((result) => {
-        res.json(result);
-    }, () => {
+
+    const subscription = await getSubscription(username, id);
+    if (!subscription) {
         res.status(404).json({ error: 'No subscription found.' });
-    });
+    } else {
+        getCurrentIssue(subscription).then((result) => {
+            res.json(result);
+        });
+    }
 });
 
 module.exports = router;
