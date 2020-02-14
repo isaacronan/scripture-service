@@ -9,9 +9,10 @@ router.use(express.json());
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
 
-    getUserAuthInfo(username).then(async (docs) => {
-        if (docs.length && docs[0].password === password) {
+    getUserAuthInfo(username).then(async (doc) => {
+        if (doc && doc.password === password) {
             const token = sign({ username });
+            await deleteRefreshTokens(username);
             const refresh = await createRefreshToken(username);
             res.json({ message: 'Successful login!', token, refresh });
         } else {
@@ -27,9 +28,10 @@ router.get('/logout', authenticate, async (req, res) => {
 
 router.post('/refresh', async (req, res) => {
     const { username, refresh } = req.body;
-    const refreshIsValid = await getRefreshToken(username, refresh);
-    if (refreshIsValid) {
+    const refreshToken = await getRefreshToken(username, refresh);
+    if (refreshToken) {
         const token = sign({ username });
+        await deleteRefreshTokens(username);
         const refresh = await createRefreshToken(username);
         res.json({ message: 'New token successfully obtained.', token, refresh });
     } else {
@@ -46,13 +48,14 @@ router.post('/create', async (req, res) => {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
         const { username, password } = credentialsSchema.cast(credentials);
-        createUserAccount(username, password).then((alreadyExists) => {
-            if (alreadyExists) {
-                res.status(400).json({ message: 'Account already exists.' });
-            } else {
+        const existingUser = await getUserAuthInfo(username);
+        if (existingUser) {
+            res.status(400).json({ message: 'Account already exists.' });
+        } else {
+            createUserAccount(username, password).then(() => {
                 res.json({ message: 'Account created.' });
-            }
-        });
+            });
+        }     
     }
 });
 

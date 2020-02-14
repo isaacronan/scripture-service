@@ -20,7 +20,7 @@ const getCollection = (collection) => new Promise(async (resolve) => {
 });
 
 const constructIssuePipeline = (subscription) => {
-    const { verseDosage, bookPool, currentIssue, name } = subscription;
+    const { verseDosage, bookPool, currentIssue } = subscription;
     const { currentBook, currentChapter, currentVerse } = currentIssue;
     const pipeline = [
         { $match: { $and: [
@@ -51,8 +51,15 @@ const constructIssueResponse = (subscription, docs) => {
     return { name, verseDosage, bookPool, currentIssue, nextIssue, content };
 }
 
+const constructCurrentIssue = (subscription) => ({
+    currentBook: subscription.bookPool[0],
+    currentChapter: 1,
+    currentVerse: 1
+});
+
 module.exports = {
     getCollection,
     constructIssuePipeline,
-    constructIssueResponse
+    constructIssueResponse,
+    constructCurrentIssue
 };
