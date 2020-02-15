@@ -4,29 +4,21 @@ class DatabaseService {
     connectedClient = null;
 
     getDb() {
-        return new Promise((resolve) => {
-            if (this.connectedClient && this.connectedClient.isConnected()) {
-                resolve(this.connectedClient.db(process.env.DBNAME));
-            } else {
-                MongoClient.connect(`mongodb://${process.env.DBHOST}:${process.env.DBPORT}`, { useUnifiedTopology: true }).then((connectedClient) => {
-                    this.connectedClient = connectedClient;
-                    resolve(connectedClient.db(process.env.DBNAME));
-                }, () => {
-                    resolve(null);
-                });
-            }
+        if (this.connectedClient && this.connectedClient.isConnected()) {
+            return Promise.resolve(this.connectedClient.db(process.env.DBNAME));
+        }
+
+        return MongoClient.connect(`mongodb://${process.env.DBHOST}:${process.env.DBPORT}`, { useUnifiedTopology: true }).then((connectedClient) => {
+            this.connectedClient = connectedClient;
+            return connectedClient.db(process.env.DBNAME);
+        }).catch(() => {
+            console.log('could not connect to database...');
         });
     }
 
     getCollection(collection) {
-        return new Promise((resolve) => {
-            dbService.getDb().then((db) => {
-                if (db) {
-                    resolve(db.collection(collection));
-                } else {
-                    resolve(null);
-                }
-            });
+        return dbService.getDb().then((db) => {
+            return db.collection(collection);
         });
     };
 }
