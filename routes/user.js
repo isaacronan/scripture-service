@@ -18,6 +18,8 @@ router.post('/login', (req, res) => {
         } else {
             res.status(400).json({ error: 'Credentials don\'t match!' })
         }
+    }).catch(() => {
+        res.status(500).send({ error: 'Server error encountered.' });
     });
 });
 

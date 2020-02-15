@@ -1,14 +1,20 @@
 const uuid = require('uuid');
-const { getCollection } = require('../utils/db');
+const { getCollection, dbService } = require('../utils/db');
 
 const users = getCollection('users');
 const tokens = getCollection('tokens');
 
 const EXP_TIME_MS = 1 * 60 * 1000;
 
-const getUserAuthInfo = (username) => new Promise(async (resolve) => {
-    (await users).findOne({ username }, { projection: { _id: 0 }}).then((doc) => {
-        resolve(doc);
+const getUserAuthInfo = (username) => new Promise(async (resolve, reject) => {
+    dbService.getCollection('users').then((users) => {
+        if (users) {
+            users.findOne({ username }, { projection: { _id: 0 }}).then((doc) => {
+                resolve(doc);
+            });
+        } else {
+            reject(null);
+        }
     });
 });
 
