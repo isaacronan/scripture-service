@@ -6,7 +6,7 @@ const { sign, authenticate, credentialsSchema, passwordSchema } = require('../ut
 
 router.use(express.json());
 
-router.post('/login', (req, res) => {
+router.post('/login', (req, res, next) => {
     const { username, password } = req.body;
 
     getUserAuthInfo(username).then(async (doc) => {
@@ -18,9 +18,7 @@ router.post('/login', (req, res) => {
         } else {
             res.status(400).json({ error: 'Credentials don\'t match!' })
         }
-    }).catch(() => {
-        res.status(500).send({ error: 'Server error encountered.' });
-    });
+    }).catch(next);
 });
 
 router.get('/logout', authenticate, async (req, res) => {
