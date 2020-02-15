@@ -1,22 +1,46 @@
 const MongoClient = require('mongodb').MongoClient;
-const client = new MongoClient(`mongodb://${process.env.DBHOST}:27017`, { useUnifiedTopology: true });
-const DBNAME = 'scripture';
 
-let db;
-const getDb = () => new Promise((resolve) => {
-    if (db) {
-        resolve(db);
+class DatabaseService {
+    connectedClient = null;
+
+    getDb() {
+        return new Promise((resolve) => {
+            if (this.connectedClient && this.connectedClient.isConnected()) {
+                resolve(this.connectedClient.db(process.env.DBNAME));
+            } else {
+                MongoClient.connect(`mongodb://${process.env.DBHOST}:${process.env.DBPORT}`, { useUnifiedTopology: true }).then((connectedClient) => {
+                    this.connectedClient = connectedClient;
+                    resolve(connectedClient.db(process.env.DBNAME));
+                }, () => {
+                    resolve(null);
+                });
+            }
+        });
     }
 
-    client.connect(() => {
-        db = client.db(DBNAME);
-        resolve(db);
-    });
-});
+    getCollection(collection) {
+        return new Promise((resolve) => {
+            dbService.getDb().then((db) => {
+                if (db) {
+                    resolve(db.collection(collection));
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    };
+}
 
-const getCollection = (collection) => new Promise(async (resolve) => {
-    const db = await getDb();
-    resolve(db.collection(collection));
+const dbService = new DatabaseService();
+
+const getCollection = (collection) => new Promise((resolve) => {
+    dbService.getDb().then((db) => {
+        if (db) {
+            resolve(db.collection(collection));
+        } else {
+            resolve(null);
+        }
+    });
 });
 
 const constructIssuePipeline = (subscription) => {
@@ -61,5 +85,6 @@ module.exports = {
     getCollection,
     constructIssuePipeline,
     constructIssueResponse,
-    constructCurrentIssue
+    constructCurrentIssue,
+    dbService
 };
