@@ -25,16 +25,6 @@ class DatabaseService {
 
 const dbService = new DatabaseService();
 
-const getCollection = (collection) => new Promise((resolve) => {
-    dbService.getDb().then((db) => {
-        if (db) {
-            resolve(db.collection(collection));
-        } else {
-            resolve(null);
-        }
-    });
-});
-
 const constructIssuePipeline = (subscription) => {
     const { verseDosage, bookPool, currentIssue } = subscription;
     const { currentBook, currentChapter, currentVerse } = currentIssue;
@@ -74,7 +64,6 @@ const constructCurrentIssue = (subscription) => ({
 });
 
 module.exports = {
-    getCollection,
     constructIssuePipeline,
     constructIssueResponse,
     constructCurrentIssue,

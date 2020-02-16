@@ -1,51 +1,48 @@
 const uuid = require('uuid');
-const { getCollection, dbService } = require('../utils/db');
-
-const users = getCollection('users');
-const tokens = getCollection('tokens');
+const { dbService: { getCollection }} = require('../utils/db');;
 
 const EXP_TIME_MS = 1 * 60 * 1000;
 
-const getUserAuthInfo = (username) => dbService.getCollection('users').then((users) => {
+const getUserAuthInfo = (username) => getCollection('users').then((users) => {
     return users.findOne({ username }, { projection: { _id: 0 }}).then((doc) => {
         return doc;
     });
 });
 
-const createUserAccount = (username, password) => new Promise(async (resolve) => {
-    (await users).insertOne({ username, password }).then(() => {
-        resolve();
+const createUserAccount = (username, password) => getCollection('users').then((users) => {
+    return users.insertOne({ username, password }).then(({ result }) => {
+        return result.n;
     });
 });
 
-const createRefreshToken = (username) => new Promise(async (resolve) => {
+const createRefreshToken = (username) => getCollection('tokens').then((tokens) => {
     const refresh = uuid.v4();
-    (await tokens).insertOne({ username, refresh, timestamp: Date.now() }).then(() => {
-        resolve(refresh);
+    return tokens.insertOne({ username, refresh, timestamp: Date.now() }).then(() => {
+        return refresh;
     });
 });
 
-const getRefreshToken = (username, refresh) => new Promise(async (resolve) => {
-    (await tokens).findOne({ username, refresh, timestamp: { $gt: Date.now() - EXP_TIME_MS } }).then((doc) => {
-        resolve(doc);
+const getRefreshToken = (username, refresh) => getCollection('tokens').then((tokens) => {
+    return tokens.findOne({ username, refresh, timestamp: { $gt: Date.now() - EXP_TIME_MS } }).then((doc) => {
+        return doc;
     });
 });
 
-const deleteRefreshTokens = (username) => new Promise(async (resolve) => {
-    (await tokens).deleteMany({ username }).then(() => {
-        resolve();
+const deleteRefreshTokens = (username) => getCollection('tokens').then((tokens) => {
+    return tokens.deleteMany({ username }).then(({ result }) => {
+        return result.n;
     });
 });
 
-const updatePassword = (username, currentPassword, newPassword) => new Promise(async (resolve) => {
-    (await users).updateOne({ username, password: currentPassword }, { $set: { password: newPassword }}).then(({ result }) => {
-        resolve(result.n);
+const updatePassword = (username, currentPassword, newPassword) => getCollection('users').then((users) => {
+    return users.updateOne({ username, password: currentPassword }, { $set: { password: newPassword }}).then(({ result }) => {
+        return result.n;
     });
 });
 
-const deleteUser = (username, password) => new Promise(async (resolve) => {
-    (await users).deleteMany({ username, password }).then(({ result }) => {
-        resolve(result.n);
+const deleteUser = (username, password) => getCollection('users').then((users) => {
+    return users.deleteMany({ username, password }).then(({ result }) => {
+        return result.n;
     });
 });
 
