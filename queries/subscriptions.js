@@ -38,11 +38,18 @@ const deleteSubscription = (username, id) => getCollection('subscriptions').then
     });
 });
 
+const deleteSubscriptions = (username) => getCollection('subscriptions').then((subscriptions) => {
+    return subscriptions.deleteMany({ username }).then(({ result }) => {
+        return result.n;
+    });
+});
+
 module.exports = {
     getCurrentIssue,
     getSubscriptions,
     getSubscription,
     updateSubscription,
     createSubscription,
-    deleteSubscription
+    deleteSubscription,
+    deleteSubscriptions
 };

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword, deleteUser } = require('../queries/user');
+const { deleteSubscriptions } = require('../queries/subscriptions');
 const { sign, authenticate, credentialsSchema, passwordSchema } = require('../utils/routing');
 
 router.use(express.json());
@@ -84,9 +85,10 @@ router.put('/password', authenticate, async (req, res, next) => {
 router.post('/delete', authenticate, (req, res, next) => {
     const { password } = req.body;
 
-    deleteRefreshTokens(req.user.username).then(async () => {
-        const numDeleted = await deleteUser(req.user.username, password)
+    deleteUser(req.user.username, password).then(async (numDeleted) => {
         if (numDeleted) {
+            await deleteRefreshTokens(req.user.username);
+            await deleteSubscriptions(req.user.username);
             res.json({ message: 'User successfully deleted.' });
         } else {
             res.status(400).json({ message: 'Credentials don\'t match.' });
