@@ -16,6 +16,9 @@ app.use(passport.initialize());
 app.use('/books', books);
 app.use('/subscriptions', subscriptions);
 app.use('/user', user);
+app.use((_req, res) => {
+    res.status(404).send({ error: 'Route not found.' });
+});
 app.use((_err, _req, res, _next) => {
     res.status(500).send({ error: 'Server error encountered.' });
 });

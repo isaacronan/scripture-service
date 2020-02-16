@@ -21,25 +21,27 @@ router.post('/login', (req, res, next) => {
     }).catch(next);
 });
 
-router.get('/logout', authenticate, async (req, res) => {
-    deleteRefreshTokens(req.user.username);
-    res.json({ message: 'User is deauthenticated.' });
+router.get('/logout', authenticate, (req, res, next) => {
+    deleteRefreshTokens(req.user.username).then(() => {
+        res.json({ message: 'User is deauthenticated.' });
+    }).catch(next);
 });
 
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', (req, res, next) => {
     const { username, refresh } = req.body;
-    const refreshToken = await getRefreshToken(username, refresh);
-    if (refreshToken) {
-        const token = sign({ username });
-        await deleteRefreshTokens(username);
-        const refresh = await createRefreshToken(username);
-        res.json({ message: 'New token successfully obtained.', token, refresh });
-    } else {
-        res.status(400).send({ error: 'Refresh token is invalid.' });
-    }
+    getRefreshToken(username, refresh).then(async (refreshToken) => {
+        if (refreshToken) {
+            const token = sign({ username });
+            await deleteRefreshTokens(username);
+            const refresh = await createRefreshToken(username);
+            res.json({ message: 'New token successfully obtained.', token, refresh });
+        } else {
+            res.status(400).send({ error: 'Refresh token is invalid.' });
+        }
+    }).catch(next);
 });
 
-router.post('/create', async (req, res) => {
+router.post('/create', async (req, res, next) => {
     const credentials = req.body;
 
     const isValid = await credentialsSchema.isValid(credentials);
@@ -48,18 +50,19 @@ router.post('/create', async (req, res) => {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
         const { username, password } = credentialsSchema.cast(credentials);
-        const existingUser = await getUserAuthInfo(username);
-        if (existingUser) {
-            res.status(400).json({ message: 'Account already exists.' });
-        } else {
-            createUserAccount(username, password).then(() => {
-                res.json({ message: 'Account created.' });
-            });
-        }     
+        getUserAuthInfo(username).then((existingUser) => {
+            if (existingUser) {
+                res.status(400).json({ message: 'Account already exists.' });
+            } else {
+                createUserAccount(username, password).then(() => {
+                    res.json({ message: 'Account created.' });
+                });
+            }
+        }).catch(next);
     }
 });
 
-router.put('/password', authenticate, async (req, res) => {
+router.put('/password', authenticate, async (req, res, next) => {
     const passwords = req.body;
 
     const isValid = await passwordSchema.isValid(passwords);
@@ -74,21 +77,21 @@ router.put('/password', authenticate, async (req, res) => {
             } else {
                 res.json({ message: 'Password successfully updated.' });
             }
-        });
+        }).catch(next);
     }
 });
 
-router.post('/delete', authenticate, async (req, res) => {
+router.post('/delete', authenticate, (req, res, next) => {
     const { password } = req.body;
 
-    await deleteRefreshTokens(req.user.username);
-    deleteUser(req.user.username, password).then((numDeleted) => {
+    deleteRefreshTokens(req.user.username).then(async () => {
+        const numDeleted = await deleteUser(req.user.username, password)
         if (numDeleted) {
             res.json({ message: 'User successfully deleted.' });
         } else {
             res.status(400).json({ message: 'Credentials don\'t match.' });
         }
-    });
+    }).catch(next);
 });
 
 module.exports = router;
