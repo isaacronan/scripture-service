@@ -39,27 +39,57 @@ const constructIssuePipeline = (subscription) => {
         ]}},
         { $sort: { booknumber: 1, chapternumber: 1, versenumber: 1 }},
         { $limit:  verseDosage + 1 },
-        { $project: { _id: false }}
+        { $project: { _id: false }},
+        { $group: {
+            _id: { booknumber: '$booknumber', chapternumber: '$chapternumber' },
+            verses: { $push: '$$ROOT' }
+        }},
+        { $sort: {
+            '_id.booknumber': 1,
+            '_id.chapternumber': 1
+        }},
+        { $group: {
+            _id: { booknumber: '$_id.booknumber' },
+            chapters: { $push: { chapternumber: '$_id.chapternumber', verses: '$verses' } }
+        }},
+        { $sort: {
+            '_id.booknumber': 1
+        }},
+        { $project: {
+            _id: false,
+            booknumber: '$_id.booknumber',
+            chapters: '$chapters'
+        }}
     ];
 
     return pipeline;
 };
 
 const constructIssueResponse = (subscription, docs) => {
-    const { verseDosage, bookPool, name } = subscription;
-    const content = docs.slice(0, verseDosage);
-    const currentIssue = docs.length ? {
-        currentBook: content[0].booknumber,
-        currentChapter: content[0].chapternumber,
-        currentVerse: content[0].versenumber,
-    } : null;
-    const nextIssue = docs.length === verseDosage + 1 ? {
-        currentBook: docs[verseDosage].booknumber,
-        currentChapter: docs[verseDosage].chapternumber,
-        currentVerse: docs[verseDosage].versenumber
+    const { verseDosage, bookPool, name, currentIssue } = subscription;
+    const flattenedDocs = docs
+        .reduce((acc, book) => [...acc, ...book.chapters], [])
+        .reduce((acc, chapter) => [...acc, ...chapter.verses], []);
+    const nextIssue = flattenedDocs.length === verseDosage + 1 ? {
+        currentBook: flattenedDocs[verseDosage].booknumber,
+        currentChapter: flattenedDocs[verseDosage].chapternumber,
+        currentVerse: flattenedDocs[verseDosage].versenumber
     } : null;
 
-    return { name, verseDosage, bookPool, currentIssue, nextIssue, content };
+    const books = [...docs];
+    if (nextIssue) {
+        const lastBook = books[books.length - 1];
+        const lastChapter = lastBook.chapters[lastBook.chapters.length - 1];
+        lastChapter.verses.pop();
+        if (!lastChapter.verses.length) {
+            lastBook.chapters.pop();
+            if (!lastBook.chapters.length) {
+                books.pop();
+            }
+        }
+    }
+
+    return { name, verseDosage, bookPool, currentIssue, nextIssue, books };
 }
 
 const constructCurrentIssue = (subscription) => ({
