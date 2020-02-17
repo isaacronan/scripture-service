@@ -20,6 +20,12 @@ const sign = payload => jwt.sign(payload, SECRET, { expiresIn: 30 * 60 });
 
 const authenticate = passport.authenticate('jwt', { session: false });
 
+const issueValidator = async (issue) => !issue || await getVerse(
+    issue.currentBook,
+    issue.currentChapter,
+    issue.currentVerse
+);
+
 const updateSubscriptionSchema = yup.object().noUnknown().shape({
     name: yup.string().min(1),
     verseDosage: yup.number().integer().positive(),
@@ -28,13 +34,7 @@ const updateSubscriptionSchema = yup.object().noUnknown().shape({
         currentBook: yup.number().integer().positive().required(),
         currentChapter: yup.number().integer().positive().required(),
         currentVerse: yup.number().integer().positive().required()
-    }).default(undefined).test('isValidVerse', 'isValidVerse', async (currentIssue) => {
-        return !currentIssue || await getVerse(
-            currentIssue.currentBook,
-            currentIssue.currentChapter,
-            currentIssue.currentVerse
-        );
-    })
+    }).default(undefined).test('', '', issueValidator)
 });
 
 const createSubscriptionSchema = yup.object().noUnknown().shape({
