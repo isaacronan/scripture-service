@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword, deleteUser } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
-const { sign, authenticate, credentialsSchema, passwordSchema } = require('../utils/routing');
+const { sign, authenticate, credentialsSchema, passwordSchema, generateSalt, hashPassword } = require('../utils/routing');
 
 router.use(express.json());
 
@@ -11,7 +11,7 @@ router.post('/login', (req, res, next) => {
     const { username, password } = req.body;
 
     getUserAuthInfo(username).then(async (doc) => {
-        if (doc && doc.password === password) {
+        if (doc && doc.password === hashPassword(password, doc.salt)) {
             const token = sign({ username });
             await deleteRefreshTokens(username);
             const refresh = await createRefreshToken(username);
@@ -51,11 +51,13 @@ router.post('/create', async (req, res, next) => {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
         const { username, password } = credentialsSchema.cast(credentials);
-        getUserAuthInfo(username).then((existingUser) => {
+        getUserAuthInfo(username).then(async (existingUser) => {
             if (existingUser) {
                 res.status(400).json({ message: 'Account already exists.' });
             } else {
-                createUserAccount(username, password).then(() => {
+                const salt = await generateSalt();
+                const hashedPassword = hashPassword(password, salt);
+                createUserAccount(username, hashedPassword, salt).then(() => {
                     res.json({ message: 'Account created.' });
                 });
             }
@@ -71,8 +73,9 @@ router.put('/password', authenticate, async (req, res, next) => {
     if (!isValid) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
+        const { salt } = await getUserAuthInfo(req.user.username);
         const { currentPassword, newPassword } = passwordSchema.cast(passwords);
-        updatePassword(req.user.username, currentPassword, newPassword).then((numUpdated) => {
+        updatePassword(req.user.username, hashPassword(currentPassword, salt), hashPassword(newPassword, salt)).then((numUpdated) => {
             if (!numUpdated) {
                 res.status(400).json({ message: 'Credentials don\'t match.' });
             } else {
@@ -82,10 +85,11 @@ router.put('/password', authenticate, async (req, res, next) => {
     }
 });
 
-router.post('/delete', authenticate, (req, res, next) => {
+router.post('/delete', authenticate, async (req, res, next) => {
     const { password } = req.body;
+    const { salt } = await getUserAuthInfo(req.user.username);
 
-    deleteUser(req.user.username, password).then(async (numDeleted) => {
+    deleteUser(req.user.username, hashPassword(password, salt)).then(async (numDeleted) => {
         if (numDeleted) {
             await deleteRefreshTokens(req.user.username);
             await deleteSubscriptions(req.user.username);

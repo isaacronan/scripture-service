@@ -1,10 +1,11 @@
+const crypto = require('crypto');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
 const { getVerse } = require('../queries/text');
 
-const SECRET = 'secret';
+const SECRET = process.env.SECRET;
 
 const LASTBOOK = 73;
 
@@ -53,6 +54,18 @@ const passwordSchema = yup.object().noUnknown().shape({
     newPassword: yup.string().min(1).required(),
 });
 
+const generateSalt = () => new Promise((resolve) => {
+    crypto.randomBytes(8, (_err, buf) => {
+        resolve(buf.toString('hex'));
+    });
+});
+
+const hashPassword = (password, salt) => {
+    const hash = crypto.createHash('sha256');
+    hash.update(`${password}${salt}`);
+    return hash.digest().toString('hex');
+};
+
 module.exports = {
     SECRET,
     checkResultsAndRespond,
@@ -61,5 +74,7 @@ module.exports = {
     updateSubscriptionSchema,
     createSubscriptionSchema,
     credentialsSchema,
-    passwordSchema
+    passwordSchema,
+    generateSalt,
+    hashPassword
 };

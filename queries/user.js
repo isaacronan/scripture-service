@@ -9,8 +9,8 @@ const getUserAuthInfo = (username) => getCollection('users').then((users) => {
     });
 });
 
-const createUserAccount = (username, password) => getCollection('users').then((users) => {
-    return users.insertOne({ username, password }).then(({ result }) => {
+const createUserAccount = (username, password, salt) => getCollection('users').then((users) => {
+    return users.insertOne({ username, password, salt }).then(({ result }) => {
         return result.n;
     });
 });
