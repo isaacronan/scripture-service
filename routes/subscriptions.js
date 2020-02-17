@@ -17,12 +17,12 @@ router.post('/', authenticate, async (req, res, next) => {
     const { username } = req.user;
     const subscription = req.body;
 
-    const isValid = await createSubscriptionSchema.isValid(subscription);
+    const validatedSubscription = await createSubscriptionSchema.validate(subscription).catch(() => null);
     
-    if (!isValid) {
+    if (!validatedSubscription) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        createSubscription(username, createSubscriptionSchema.cast(subscription)).then((id) => {
+        createSubscription(username, validatedSubscription).then((id) => {
             if (id) {
                 res.json({ message: 'Subscription created.', id });
             } else {
@@ -37,12 +37,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const subscription = req.body;
     const { id } = req.params;
 
-    const isValid = await updateSubscriptionSchema.isValid(subscription);
+    const validatedSubscription = await updateSubscriptionSchema.validate(subscription).catch(() => null);
 
-    if (!isValid) {
+    if (!validatedSubscription) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        updateSubscription(username, id, updateSubscriptionSchema.cast(subscription)).then((numUpdated) => {
+        updateSubscription(username, id, validatedSubscription).then((numUpdated) => {
             if (numUpdated) {
                 res.json({ message: 'Subscription updated.' });
             } else {

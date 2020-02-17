@@ -24,9 +24,16 @@ const getChapter = (booknumber, chapternumber) => getCollection('verses').then((
     });
 });
 
+const getVerse = (booknumber, chapternumber, versenumber) => getCollection('verses').then((verses) => {
+    return verses.findOne({ booknumber, chapternumber , versenumber}, { projection: { _id: 0 } }).then((doc) => {
+        return doc;
+    });
+});
+
 module.exports = {
     getBooks,
     getBook,
     getChapters,
-    getChapter
+    getChapter,
+    getVerse
 };
