@@ -20,7 +20,19 @@ const getSubscription = (username, id) => getCollection('subscriptions').then((s
 });
 
 const updateSubscription = (username, id, subscription) => getCollection('subscriptions').then((subscriptions) => {
-    return subscriptions.updateOne({ username, id }, { $set: { ...subscription }}).then(({ result }) => {
+    return subscriptions.updateOne({ username, id }, [
+        { $set: { ...subscription }},
+        { $set: { currentIssue: {
+            $cond: [
+                { $not: [{ $in: [
+                    '$currentIssue.currentBook',
+                    '$bookPool'
+                ]}]},
+                { currentBook: { $arrayElemAt: ['$bookPool', 0]}, currentChapter: 1, currentVerse: 1 },
+                { currentBook: '$currentIssue.currentBook', currentChapter: '$currentIssue.currentChapter', currentVerse: '$currentIssue.currentVerse' }
+            ]
+        }}}
+    ]).then(({ result }) => {
         return result.n;
     });
 });
