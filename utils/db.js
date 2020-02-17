@@ -46,8 +46,13 @@ const constructIssuePipeline = (subscription) => {
 };
 
 const constructIssueResponse = (subscription, docs) => {
-    const { verseDosage, bookPool, currentIssue, name } = subscription;
+    const { verseDosage, bookPool, name } = subscription;
     const content = docs.slice(0, verseDosage);
+    const currentIssue = docs.length ? {
+        currentBook: content[0].booknumber,
+        currentChapter: content[0].chapternumber,
+        currentVerse: content[0].versenumber,
+    } : null;
     const nextIssue = docs.length === verseDosage + 1 ? {
         currentBook: docs[verseDosage].booknumber,
         currentChapter: docs[verseDosage].chapternumber,
