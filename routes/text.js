@@ -16,8 +16,9 @@ router.get('/:booknumber/chapters', ({ params: { booknumber }}, res, next) => {
     getChapters(Number(booknumber)).then(checkResultsAndRespond(res)).catch(next);
 });
 
-router.get('/:booknumber/chapters/:chapternumber', ({ params: { booknumber, chapternumber }}, res, next) => {
-    getChapter(Number(booknumber), Number(chapternumber)).then(checkResultsAndRespond(res)).catch(next);
+router.get('/:booknumber/chapters/:chapternumber', ({ params: { booknumber, chapternumber }, query }, res, next) => {
+    const { start, end } = query;
+    getChapter(Number(booknumber), Number(chapternumber), Number(start), Number(end)).then(checkResultsAndRespond(res)).catch(next);
 });
 
 module.exports = router;

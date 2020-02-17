@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { authenticate, updateSubscriptionSchema, createSubscriptionSchema} = require('../utils/routing');
+const { authenticate, updateSubscriptionSchema, createSubscriptionSchema } = require('../utils/routing');
 const { getCurrentIssue, getSubscriptions, getSubscription, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());

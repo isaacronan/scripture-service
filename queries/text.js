@@ -1,4 +1,4 @@
-const { dbService: { getCollection }} = require('../utils/db');
+const { dbService: { getCollection }, constructBoundedVerseQuery } = require('../utils/db');
 
 const getBooks = () => getCollection('books').then((books) => {
     return books.find({}, { projection: { _id: 0, chapters: 0 } }).sort({ booknumber: 1 }).toArray().then((docs) => {
@@ -18,8 +18,8 @@ const getChapters = (booknumber) => getCollection('books').then((books) => {
     });
 });
 
-const getChapter = (booknumber, chapternumber) => getCollection('verses').then((verses) => {
-    return verses.find({ booknumber, chapternumber }, { projection: { _id: 0 } }).sort({ versenumber: 1 }).toArray().then((docs) => {
+const getChapter = (booknumber, chapternumber, start, end) => getCollection('verses').then((verses) => {
+    return verses.find({ booknumber, chapternumber, ...constructBoundedVerseQuery(start, end) }, { projection: { _id: 0 } }).sort({ versenumber: 1 }).toArray().then((docs) => {
         return docs;
     });
 });

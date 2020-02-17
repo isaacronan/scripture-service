@@ -68,9 +68,15 @@ const constructCurrentIssue = (subscription) => ({
     currentVerse: 1
 });
 
+const constructBoundedVerseQuery = (start, end) => start || end ? { versenumber: {
+    ...start ? { $gte: start }: {},
+    ...end ? { $lte: end } : {}
+}} : {};
+
 module.exports = {
     constructIssuePipeline,
     constructIssueResponse,
     constructCurrentIssue,
-    dbService
+    dbService,
+    constructBoundedVerseQuery
 };
