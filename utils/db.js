@@ -103,10 +103,21 @@ const constructBoundedVerseQuery = (start, end) => start || end ? { versenumber:
     ...end ? { $lte: end } : {}
 }} : {};
 
+const orderFavorite = ({ booknumber, chapternumber, start, end }) => ({
+    booknumber,
+    chapternumber,
+    start,
+    end
+});
+
+const orderFavorites = favorites => favorites.map(orderFavorite);
+
 module.exports = {
     constructIssuePipeline,
     constructIssueResponse,
     constructCurrentIssue,
     dbService,
-    constructBoundedVerseQuery
+    constructBoundedVerseQuery,
+    orderFavorite,
+    orderFavorites
 };

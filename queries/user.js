@@ -1,5 +1,5 @@
 const uuid = require('uuid');
-const { dbService: { getCollection }} = require('../utils/db');;
+const { dbService: { getCollection }, orderFavorite, orderFavorites } = require('../utils/db');;
 
 const EXP_TIME_MS = 1 * 60 * 1000;
 
@@ -53,13 +53,13 @@ const getFavorites = (username) => getCollection('users').then((users) => {
 });
 
 const addFavorite = (username, favorite) => getCollection('users').then((users) => {
-    return users.updateOne({ username }, { $push: { favorites: favorite }}).then(({ result }) => {
+    return users.updateOne({ username }, { $addToSet: { favorites: orderFavorite(favorite) }}).then(({ result }) => {
         return result.n;
     });
 });
 
 const updateFavorites = (username, favorites) => getCollection('users').then((users) => {
-    return users.updateOne({ username }, { $set: { favorites }}).then(({ result }) => {
+    return users.updateOne({ username }, { $set: { favorites: orderFavorites(favorites) }}).then(({ result }) => {
         return result.n;
     });
 });

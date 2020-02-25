@@ -39,15 +39,25 @@ const favoriteValidator = async (favorite) => (favorite.end >= favorite.start) &
     favorite.end
 ));
 
-const favoritesValidator = (username) => async (favorites) => {
+const constructFavoriteComparator = (favoriteA) => (favoriteB) => (
+    favoriteA.booknumber === favoriteB.booknumber &&
+    favoriteA.chapternumber === favoriteB.chapternumber &&
+    favoriteA.start === favoriteB.start &&
+    favoriteA.end === favoriteB.end
+);
+
+const favoritesExistenceValidator = (username) => async (favorites) => {
     const { favorites: existingFavorites } = await getFavorites(username);
-    const favoriteIsNotExisting = favorite => existingFavorites.findIndex(existingFavorite =>
-        favorite.booknumber === existingFavorite.booknumber &&
-        favorite.chapternumber === existingFavorite.chapternumber &&
-        favorite.start === existingFavorite.start &&
-        favorite.end === existingFavorite.end
-    ) === -1;
+    const favoriteIsNotExisting = favorite => existingFavorites.findIndex(constructFavoriteComparator(favorite)) === -1;
+
     return favorites.filter(favoriteIsNotExisting).length === 0;
+};
+
+const favoritesUniquenessValidator = (favorites) => {
+    const favoriteToInstanceCount = favorite => favorites.filter(constructFavoriteComparator(favorite)).length;
+    const instanceCounts = favorites.map(favoriteToInstanceCount);
+    const duplicates = instanceCounts.filter(instanceCount => instanceCount > 1);
+    return duplicates.length === 0;
 };
 
 const feedbackReportValidator = async (feedbackReport) => await getVerse(
@@ -95,7 +105,7 @@ const favoritesSchema = (username) => yup.array().of(yup.object().noUnknown().sh
     chapternumber: yup.number().integer().positive().required(),
     start: yup.number().integer().positive().required(),
     end: yup.number().integer().positive().required(),
-})).test('', '', favoritesValidator(username));
+})).test('', '', favoritesUniquenessValidator).test('', '', favoritesExistenceValidator(username));
 
 const feedbackReportSchema = yup.object().noUnknown().shape({
     booknumber: yup.number().integer().positive().lessThan(LASTBOOK + 1).required(),
