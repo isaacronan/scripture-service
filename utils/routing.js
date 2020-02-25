@@ -9,6 +9,7 @@ const { getFavorites } = require('../queries/user');
 const SECRET = process.env.SECRET;
 
 const LASTBOOK = 73;
+const feedbackReportTypes = ['TYPO', 'NMBR'];
 
 const checkResultsAndRespond = (res) => (results) => {
     if (results.length) {
@@ -48,6 +49,12 @@ const favoritesValidator = (username) => async (favorites) => {
     ) === -1;
     return favorites.filter(favoriteIsNotExisting).length === 0;
 };
+
+const feedbackReportValidator = async (feedbackReport) => await getVerse(
+    feedbackReport.booknumber,
+    feedbackReport.chapternumber,
+    feedbackReport.versenumber
+);
 
 const updateSubscriptionSchema = yup.object().noUnknown().shape({
     name: yup.string().min(1),
@@ -90,6 +97,13 @@ const favoritesSchema = (username) => yup.array().of(yup.object().noUnknown().sh
     end: yup.number().integer().positive().required(),
 })).test('', '', favoritesValidator(username));
 
+const feedbackReportSchema = yup.object().noUnknown().shape({
+    booknumber: yup.number().integer().positive().lessThan(LASTBOOK + 1).required(),
+    chapternumber: yup.number().integer().positive().required(),
+    versenumber: yup.number().integer().positive().required(),
+    type: yup.string().oneOf(feedbackReportTypes).required()
+}).test('', '', feedbackReportValidator);
+
 const generateSalt = () => new Promise((resolve) => {
     crypto.randomBytes(8, (_err, buf) => {
         resolve(buf.toString('hex'));
@@ -114,5 +128,6 @@ module.exports = {
     generateSalt,
     hashPassword,
     favoriteSchema,
-    favoritesSchema
+    favoritesSchema,
+    feedbackReportSchema
 };

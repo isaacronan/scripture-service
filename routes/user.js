@@ -108,7 +108,7 @@ router.post('/favorites', authenticate, async (req, res, next) => {
     if (!validatedFavorite) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        addFavorite(req.user.username, validatedFavorite).then(async (numUpdated) => {
+        addFavorite(req.user.username, validatedFavorite).then((numUpdated) => {
             if (numUpdated) {
                 res.json({ message: 'Favorite successfully added.' });
             } else {
@@ -118,7 +118,7 @@ router.post('/favorites', authenticate, async (req, res, next) => {
     }
 });
 
-router.get('/favorites', authenticate, async (req, res, next) => {
+router.get('/favorites', authenticate, (req, res, next) => {
     getFavorites(req.user.username).then((doc) => {
         res.json(doc.favorites);
     }).catch(next);

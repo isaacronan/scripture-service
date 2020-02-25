@@ -30,10 +30,17 @@ const getVerse = (booknumber, chapternumber, versenumber) => getCollection('vers
     });
 });
 
+const createFeedback = (feedbackReport) => getCollection('feedback').then((feedback) => {
+    return feedback.insertOne({ ...feedbackReport, timestamp: Date.now() }).then(({ result }) => {
+        return result.n;
+    });
+});
+
 module.exports = {
     getBooks,
     getBook,
     getChapters,
     getChapter,
-    getVerse
+    getVerse,
+    createFeedback
 };
