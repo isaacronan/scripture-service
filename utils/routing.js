@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
 const { getVerse } = require('../queries/text');
+const { getFavorites } = require('../queries/user');
 
 const SECRET = process.env.SECRET;
 
@@ -26,6 +27,27 @@ const issueValidator = async (issue) => !issue || await getVerse(
     issue.currentChapter,
     issue.currentVerse
 );
+
+const favoriteValidator = async (favorite) => (favorite.end >= favorite.start) && await getVerse(
+    favorite.booknumber,
+    favorite.chapternumber,
+    favorite.start
+) && (favorite.end === favorite.start || await getVerse(
+    favorite.booknumber,
+    favorite.chapternumber,
+    favorite.end
+));
+
+const favoritesValidator = (username) => async (favorites) => {
+    const { favorites: existingFavorites } = await getFavorites(username);
+    const favoriteIsNotExisting = favorite => existingFavorites.findIndex(existingFavorite =>
+        favorite.booknumber === existingFavorite.booknumber &&
+        favorite.chapternumber === existingFavorite.chapternumber &&
+        favorite.start === existingFavorite.start &&
+        favorite.end === existingFavorite.end
+    ) === -1;
+    return favorites.filter(favoriteIsNotExisting).length === 0;
+};
 
 const updateSubscriptionSchema = yup.object().noUnknown().shape({
     name: yup.string().min(1),
@@ -54,6 +76,20 @@ const passwordSchema = yup.object().noUnknown().shape({
     newPassword: yup.string().min(1).required(),
 });
 
+const favoriteSchema = yup.object().noUnknown().shape({
+    booknumber: yup.number().integer().positive().lessThan(LASTBOOK + 1).required(),
+    chapternumber: yup.number().integer().positive().required(),
+    start: yup.number().integer().positive().required(),
+    end: yup.number().integer().positive().required(),
+}).test('', '', favoriteValidator);
+
+const favoritesSchema = (username) => yup.array().of(yup.object().noUnknown().shape({
+    booknumber: yup.number().integer().positive().lessThan(LASTBOOK + 1).required(),
+    chapternumber: yup.number().integer().positive().required(),
+    start: yup.number().integer().positive().required(),
+    end: yup.number().integer().positive().required(),
+})).test('', '', favoritesValidator(username));
+
 const generateSalt = () => new Promise((resolve) => {
     crypto.randomBytes(8, (_err, buf) => {
         resolve(buf.toString('hex'));
@@ -76,5 +112,7 @@ module.exports = {
     credentialsSchema,
     passwordSchema,
     generateSalt,
-    hashPassword
+    hashPassword,
+    favoriteSchema,
+    favoritesSchema
 };

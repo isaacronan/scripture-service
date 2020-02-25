@@ -10,7 +10,7 @@ const getUserAuthInfo = (username) => getCollection('users').then((users) => {
 });
 
 const createUserAccount = (username, password, salt) => getCollection('users').then((users) => {
-    return users.insertOne({ username, password, salt }).then(({ result }) => {
+    return users.insertOne({ username, password, salt, favorites: [] }).then(({ result }) => {
         return result.n;
     });
 });
@@ -46,6 +46,24 @@ const deleteUser = (username, password) => getCollection('users').then((users) =
     });
 });
 
+const getFavorites = (username) => getCollection('users').then((users) => {
+    return users.findOne({ username }, { projection: { _id: 0, favorites: 1 }}).then((doc) => {
+        return doc;
+    });
+});
+
+const addFavorite = (username, favorite) => getCollection('users').then((users) => {
+    return users.updateOne({ username }, { $push: { favorites: favorite }}).then(({ result }) => {
+        return result.n;
+    });
+});
+
+const updateFavorites = (username, favorites) => getCollection('users').then((users) => {
+    return users.updateOne({ username }, { $set: { favorites }}).then(({ result }) => {
+        return result.n;
+    });
+});
+
 module.exports = {
     getUserAuthInfo,
     createUserAccount,
@@ -53,5 +71,8 @@ module.exports = {
     getRefreshToken,
     deleteRefreshTokens,
     updatePassword,
-    deleteUser
+    deleteUser,
+    addFavorite,
+    getFavorites,
+    updateFavorites
 };
