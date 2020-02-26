@@ -1,7 +1,7 @@
 const uuid = require('uuid');
 const { dbService: { getCollection }, orderFavorite, orderFavorites } = require('../utils/db');;
 
-const EXP_TIME_MS = 1 * 60 * 1000;
+const EXP_TIME_MS = 1000 * 60 * 60 * 36;
 
 const getUserAuthInfo = (username) => getCollection('users').then((users) => {
     return users.findOne({ username }, { projection: { _id: 0 }}).then((doc) => {

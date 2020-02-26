@@ -1,13 +1,13 @@
 const { dbService: { getCollection }, constructBoundedVerseQuery } = require('../utils/db');
 
 const getBooks = () => getCollection('books').then((books) => {
-    return books.find({}, { projection: { _id: 0, chapters: 0 } }).sort({ booknumber: 1 }).toArray().then((docs) => {
+    return books.find({}, { projection: { _id: 0, booknumber: 1, shortname: 1, contentsname: 1, bookname: 1, bookdesc: 1 } }).sort({ booknumber: 1 }).toArray().then((docs) => {
         return docs;
     });
 });
 
 const getBook = (booknumber) => getCollection('books').then((books) => {
-    return books.find({ booknumber }, { projection: { _id: 0, chapters: 0 } }).toArray().then((docs) => {
+    return books.find({ booknumber }, { projection: { _id: 0, booknumber: 1, shortname: 1, contentsname: 1, bookname: 1, bookdesc: 1 } }).toArray().then((docs) => {
         return docs;
     });
 });

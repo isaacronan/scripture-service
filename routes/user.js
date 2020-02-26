@@ -136,7 +136,7 @@ router.put('/favorites', authenticate, async (req, res, next) => {
             if (!numUpdated) {
                 res.status(400).json({ error: 'Favorites not updated.' });
             } else {
-                res.json({ message: 'Favorites successfully updated.', favorites: validatedFavorites });
+                res.json({ message: 'Favorites successfully updated.' });
             }
         }).catch(next);
     }
