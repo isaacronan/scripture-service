@@ -38,6 +38,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const { id } = req.params;
 
     const validatedSubscription = await updateSubscriptionSchema.validate(subscription).catch(() => null);
+    console.log(validatedSubscription);
 
     if (!validatedSubscription) {
         res.status(400).json({ error: 'Request format is invalid.' });
@@ -72,6 +73,8 @@ router.get('/:id', authenticate, (req, res, next) => {
     getSubscription(username, id).then(async (subscription) => {
         if (!subscription) {
             res.status(404).json({ error: 'Subscription not found.' });
+        } else if(subscription.currentIssue === null) {
+            res.json({ ...subscription, books: [], nextIssue: null });
         } else {
             const result = await getCurrentIssue(subscription);
             res.json(result);

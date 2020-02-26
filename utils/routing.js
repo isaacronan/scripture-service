@@ -74,7 +74,7 @@ const updateSubscriptionSchema = yup.object().noUnknown().shape({
         currentBook: yup.number().integer().positive().required(),
         currentChapter: yup.number().integer().positive().required(),
         currentVerse: yup.number().integer().positive().required()
-    }).default(undefined).test('', '', issueValidator)
+    }).default(undefined).test('', '', issueValidator).nullable(true)
 });
 
 const createSubscriptionSchema = yup.object().noUnknown().shape({

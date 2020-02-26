@@ -8,7 +8,7 @@ const getCurrentIssue = (subscription) => getCollection('verses').then((verses) 
 });
 
 const getSubscriptions = (username) => getCollection('subscriptions').then((subscriptions) => {
-    return subscriptions.find({ username }, { projection: { _id: 0, name: 1, verseDosage: 1, bookPool: 1, currentIssue: 1 }}).toArray().then((docs) => {
+    return subscriptions.find({ username }, { projection: { _id: 0, id: 1, name: 1, verseDosage: 1, bookPool: 1, currentIssue: 1 }}).toArray().then((docs) => {
         return docs;
     });
 });
@@ -23,14 +23,15 @@ const updateSubscription = (username, id, subscription) => getCollection('subscr
     return subscriptions.updateOne({ username, id }, [
         { $set: { ...subscription }},
         { $set: { currentIssue: {
-            $cond: [
-                { $not: [{ $in: [
-                    '$currentIssue.currentBook',
-                    '$bookPool'
-                ]}]},
-                { currentBook: { $arrayElemAt: ['$bookPool', 0]}, currentChapter: 1, currentVerse: 1 },
-                { currentBook: '$currentIssue.currentBook', currentChapter: '$currentIssue.currentChapter', currentVerse: '$currentIssue.currentVerse' }
-            ]
+            $switch: {
+                branches: [
+                    { case: { $eq: ['$currentIssue', null] }, then: null },
+                    { case: { $not: [{ $in: ['$currentIssue.currentBook', '$bookPool']}] }, then: {
+                        currentBook: { $arrayElemAt: ['$bookPool', 0]}, currentChapter: 1, currentVerse: 1
+                    }}
+                ],
+                default: { currentBook: '$currentIssue.currentBook', currentChapter: '$currentIssue.currentChapter', currentVerse: '$currentIssue.currentVerse' }
+            }
         }}}
     ]).then(({ result }) => {
         return result.n;
