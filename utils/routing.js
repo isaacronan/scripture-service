@@ -12,7 +12,8 @@ const LASTBOOK = 73;
 const feedbackReportTypes = ['TYPO', 'NMBR'];
 
 const checkResultsAndRespond = (res) => (results) => {
-    if (results.length) {
+    const isEmptyArray = Array.isArray(results) && !results.length;
+    if (!isEmptyArray && results !== null) {
         res.json(results);
     } else {
         res.status(404).send({ error: 'No results found!' });

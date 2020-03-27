@@ -7,13 +7,17 @@ const getBooks = () => getCollection('books').then((books) => {
 });
 
 const getBook = (booknumber) => getCollection('books').then((books) => {
-    return books.find({ booknumber }, { projection: { _id: 0, booknumber: 1, shortname: 1, contentsname: 1, bookname: 1, bookdesc: 1 } }).toArray().then((docs) => {
-        return docs;
+    return books.findOne({ booknumber }, { projection: { _id: 0, booknumber: 1, shortname: 1, contentsname: 1, bookname: 1, bookdesc: 1, chapters: 1 } }).then((doc) => {
+        return doc;
     });
 });
 
 const getChapters = (booknumber) => getCollection('books').then((books) => {
-    return books.find({ booknumber }, { projection: { _id: 0, chapters: 1 } }).toArray().then((docs) => {
+    return books.aggregate([
+        { $match: { booknumber }},
+        { $unwind: '$chapters' },
+        { $replaceRoot: { newRoot: '$chapters' }}
+    ]).toArray().then((docs) => {
         return docs;
     });
 });
