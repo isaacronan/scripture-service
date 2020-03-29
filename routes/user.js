@@ -3,18 +3,20 @@ const router = express.Router();
 
 const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
-const { sign, authenticate, credentialsSchema, passwordSchema, generateSalt, hashPassword, favoriteSchema, favoritesSchema } = require('../utils/routing');
+const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema } = require('../utils/routing');
 
 router.use(express.json());
 
 router.post('/login', (req, res, next) => {
-    const { username, password } = req.body;
+    const { username: mixedCase, password } = req.body;
+    const username = mixedCase.toLowerCase();
 
     getUserAuthInfo(username).then(async (doc) => {
         if (doc && doc.password === hashPassword(password, doc.salt)) {
             const token = sign({ username });
+            const refresh = await generateRandom();
             await deleteRefreshTokens(username);
-            const refresh = await createRefreshToken(username);
+            await createRefreshToken(username, refresh);
             res.json({ message: 'Successful login!', token, refresh });
         } else {
             res.status(400).json({ error: 'Credentials don\'t match!' })
@@ -29,12 +31,14 @@ router.get('/logout', authenticate, (req, res, next) => {
 });
 
 router.post('/refresh', (req, res, next) => {
-    const { username, refresh } = req.body;
+    const { username: mixedCase, refresh } = req.body;
+    const username = mixedCase.toLowerCase();
     getRefreshToken(username, refresh).then(async (refreshToken) => {
         if (refreshToken) {
             const token = sign({ username });
+            const refresh = await generateRandom();
             await deleteRefreshTokens(username);
-            const refresh = await createRefreshToken(username);
+            await createRefreshToken(username, refresh);
             res.json({ message: 'New token successfully obtained.', token, refresh });
         } else {
             res.status(400).send({ error: 'Refresh token is invalid.' });
@@ -50,12 +54,13 @@ router.post('/create', async (req, res, next) => {
     if (!isValid) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        const { username, password } = credentialsSchema.cast(credentials);
+        const { username: mixedCase, password } = credentialsSchema.cast(credentials);
+        const username = mixedCase.toLowerCase();
         getUserAuthInfo(username).then(async (existingUser) => {
             if (existingUser) {
                 res.status(400).json({ error: 'Account already exists.' });
             } else {
-                const salt = await generateSalt();
+                const salt = await generateRandom();
                 const hashedPassword = hashPassword(password, salt);
                 createUserAccount(username, hashedPassword, salt).then(() => {
                     res.json({ message: 'Account created.' });

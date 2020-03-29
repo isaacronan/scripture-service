@@ -115,8 +115,8 @@ const feedbackReportSchema = yup.object().noUnknown().shape({
     type: yup.string().oneOf(feedbackReportTypes).required()
 }).test('', '', feedbackReportValidator);
 
-const generateSalt = () => new Promise((resolve) => {
-    crypto.randomBytes(8, (_err, buf) => {
+const generateRandom = () => new Promise((resolve) => {
+    crypto.randomBytes(16, (_err, buf) => {
         resolve(buf.toString('hex'));
     });
 });
@@ -136,7 +136,7 @@ module.exports = {
     createSubscriptionSchema,
     credentialsSchema,
     passwordSchema,
-    generateSalt,
+    generateRandom,
     hashPassword,
     favoriteSchema,
     favoritesSchema,

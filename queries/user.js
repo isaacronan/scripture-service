@@ -1,4 +1,3 @@
-const uuid = require('uuid');
 const { dbService: { getCollection }, orderFavorite, orderFavorites } = require('../utils/db');;
 
 const EXP_TIME_MS = 1000 * 60 * 60 * 36;
@@ -15,8 +14,7 @@ const createUserAccount = (username, password, salt) => getCollection('users').t
     });
 });
 
-const createRefreshToken = (username) => getCollection('tokens').then((tokens) => {
-    const refresh = uuid.v4();
+const createRefreshToken = (username, refresh) => getCollection('tokens').then((tokens) => {
     return tokens.insertOne({ username, refresh, timestamp: Date.now() }).then(() => {
         return refresh;
     });
