@@ -7,20 +7,20 @@ const { checkResultsAndRespond, feedbackReportSchema } = require('../utils/routi
 router.use(express.json());
 
 router.get('/', (_req, res, next) => {
-    getBooks().then(checkResultsAndRespond(res)).catch(next);
+    getBooks().then(checkResultsAndRespond(res, 'Could not retrieve books.')).catch(next);
 });
 
 router.get('/:booknumber', ({ params: { booknumber }}, res, next) => {
-    getBook(Number(booknumber)).then(checkResultsAndRespond(res)).catch(next);
+    getBook(Number(booknumber)).then(checkResultsAndRespond(res, 'Invalid book!')).catch(next);
 });
 
 router.get('/:booknumber/chapters', ({ params: { booknumber }}, res, next) => {
-    getChapters(Number(booknumber)).then(checkResultsAndRespond(res)).catch(next);
+    getChapters(Number(booknumber)).then(checkResultsAndRespond(res, 'Invalid book!')).catch(next);
 });
 
 router.get('/:booknumber/chapters/:chapternumber', ({ params: { booknumber, chapternumber }, query }, res, next) => {
     const { start, end } = query;
-    getChapter(Number(booknumber), Number(chapternumber), Number(start), Number(end)).then(checkResultsAndRespond(res)).catch(next);
+    getChapter(Number(booknumber), Number(chapternumber), Number(start), Number(end)).then(checkResultsAndRespond(res, 'Invalid book or chapter!')).catch(next);
 });
 
 router.post('/feedback', async (req, res, next) => {

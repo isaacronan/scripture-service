@@ -11,12 +11,12 @@ const SECRET = process.env.SECRET;
 const LASTBOOK = 73;
 const feedbackReportTypes = ['TYPO', 'NMBR'];
 
-const checkResultsAndRespond = (res) => (results) => {
+const checkResultsAndRespond = (res, errorMessage = '') => (results) => {
     const isEmptyArray = Array.isArray(results) && !results.length;
     if (!isEmptyArray && results !== null) {
         res.json(results);
     } else {
-        res.status(404).send({ error: 'No results found!' });
+        res.status(404).send({ error: errorMessage });
     }
 };
 
