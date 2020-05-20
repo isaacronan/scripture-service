@@ -38,7 +38,6 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const { id } = req.params;
 
     const validatedSubscription = await updateSubscriptionSchema.validate(subscription).catch(() => null);
-    console.log(validatedSubscription);
 
     if (!validatedSubscription) {
         res.status(400).json({ error: 'Request format is invalid.' });

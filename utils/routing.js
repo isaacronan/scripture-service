@@ -11,6 +11,10 @@ const SECRET = process.env.SECRET;
 const LASTBOOK = 73;
 const feedbackReportTypes = ['TYPO', 'NMBR'];
 
+const subscriptionNamePattern = /^\w+$/;
+const usernamePattern = /^\w+$/;
+const passwordPattern = /^\S+$/;
+
 const checkResultsAndRespond = (res, errorMessage = '') => (results) => {
     const isEmptyArray = Array.isArray(results) && !results.length;
     if (!isEmptyArray && results !== null) {
@@ -68,7 +72,7 @@ const feedbackReportValidator = async (feedbackReport) => await getVerse(
 );
 
 const updateSubscriptionSchema = yup.object().noUnknown().shape({
-    name: yup.string().min(1),
+    name: yup.string().matches(subscriptionNamePattern),
     verseDosage: yup.number().integer().positive(),
     bookPool: yup.array().of(yup.number().integer().positive().lessThan(LASTBOOK + 1)).min(1),
     currentIssue: yup.object().noUnknown().shape({
@@ -79,19 +83,19 @@ const updateSubscriptionSchema = yup.object().noUnknown().shape({
 });
 
 const createSubscriptionSchema = yup.object().noUnknown().shape({
-    name: yup.string().min(1).required(),
+    name: yup.string().matches(subscriptionNamePattern).required(),
     verseDosage: yup.number().integer().positive().required(),
     bookPool: yup.array().of(yup.number().integer().positive().lessThan(LASTBOOK + 1)).min(1).required()
 });
 
 const credentialsSchema = yup.object().noUnknown().shape({
-    username: yup.string().min(1).required(),
-    password: yup.string().min(1).required(),
+    username: yup.string().matches(usernamePattern).required(),
+    password: yup.string().matches(passwordPattern).required(),
 });
 
 const passwordSchema = yup.object().noUnknown().shape({
-    currentPassword: yup.string().min(1).required(),
-    newPassword: yup.string().min(1).required(),
+    currentPassword: yup.string().matches(passwordPattern).required(),
+    newPassword: yup.string().matches(passwordPattern).required(),
 });
 
 const favoriteSchema = yup.object().noUnknown().shape({
