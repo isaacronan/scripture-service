@@ -12,18 +12,19 @@ const getBook = (booknumber) => getCollection('books').then((books) => {
     });
 });
 
-const getChapters = (booknumber) => getCollection('books').then((books) => {
+const getChapters = (booknumber, numberOnly = false) => getCollection('books').then((books) => {
     return books.aggregate([
         { $match: { booknumber }},
         { $unwind: '$chapters' },
-        { $replaceRoot: { newRoot: '$chapters' }}
+        { $replaceRoot: { newRoot: '$chapters' }},
+        ...numberOnly ? [{ $project: { chapternumber: true }}] : []
     ]).toArray().then((docs) => {
         return docs;
     });
 });
 
-const getChapter = (booknumber, chapternumber, start, end) => getCollection('verses').then((verses) => {
-    return verses.find({ booknumber, chapternumber, ...constructBoundedVerseQuery(start, end) }, { projection: { _id: 0 } }).sort({ versenumber: 1 }).toArray().then((docs) => {
+const getChapter = (booknumber, chapternumber, start, end, numberOnly = false) => getCollection('verses').then((verses) => {
+    return verses.find({ booknumber, chapternumber, ...constructBoundedVerseQuery(start, end) }, { projection: { _id: 0, ...numberOnly ? { versenumber: 1 } : {} }}).sort({ versenumber: 1 }).toArray().then((docs) => {
         return docs;
     });
 });

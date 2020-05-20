@@ -14,13 +14,13 @@ router.get('/:booknumber', ({ params: { booknumber }}, res, next) => {
     getBook(Number(booknumber)).then(checkResultsAndRespond(res, 'Invalid book!')).catch(next);
 });
 
-router.get('/:booknumber/chapters', ({ params: { booknumber }}, res, next) => {
-    getChapters(Number(booknumber)).then(checkResultsAndRespond(res, 'Invalid book!')).catch(next);
+router.get('/:booknumber/chapters', ({ params: { booknumber }, query }, res, next) => {
+    getChapters(Number(booknumber), !!query.numberOnly).then(checkResultsAndRespond(res, 'Invalid book!')).catch(next);
 });
 
 router.get('/:booknumber/chapters/:chapternumber', ({ params: { booknumber, chapternumber }, query }, res, next) => {
     const { start, end } = query;
-    getChapter(Number(booknumber), Number(chapternumber), Number(start), Number(end)).then(checkResultsAndRespond(res, 'Invalid book or chapter!')).catch(next);
+    getChapter(Number(booknumber), Number(chapternumber), Number(start), Number(end), !!query.numberOnly).then(checkResultsAndRespond(res, 'Invalid book or chapter!')).catch(next);
 });
 
 router.post('/feedback', async (req, res, next) => {
