@@ -8,7 +8,7 @@ const getCurrentIssue = (subscription) => getCollection('verses').then((verses) 
 });
 
 const getSubscriptions = (username) => getCollection('subscriptions').then((subscriptions) => {
-    return subscriptions.find({ username }, { projection: { _id: 0, id: 1, name: 1, verseDosage: 1, bookPool: 1, currentIssue: 1 }}).toArray().then((docs) => {
+    return subscriptions.find({ username }, { projection: { _id: 0, id: 1, name: 1, verseDosage: 1, isChapterSubscription: 1, bookPool: 1, currentIssue: 1 }}).toArray().then((docs) => {
         return docs;
     });
 });

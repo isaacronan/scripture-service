@@ -74,6 +74,7 @@ const feedbackReportValidator = async (feedbackReport) => await getVerse(
 const updateSubscriptionSchema = yup.object().noUnknown().shape({
     name: yup.string().matches(subscriptionNamePattern),
     verseDosage: yup.number().integer().positive(),
+    isChapterSubscription: yup.boolean(),
     bookPool: yup.array().of(yup.number().integer().positive().lessThan(LASTBOOK + 1)).min(1),
     currentIssue: yup.object().noUnknown().shape({
         currentBook: yup.number().integer().positive().required(),
@@ -85,6 +86,7 @@ const updateSubscriptionSchema = yup.object().noUnknown().shape({
 const createSubscriptionSchema = yup.object().noUnknown().shape({
     name: yup.string().matches(subscriptionNamePattern).required(),
     verseDosage: yup.number().integer().positive().required(),
+    isChapterSubscription: yup.boolean().required(),
     bookPool: yup.array().of(yup.number().integer().positive().lessThan(LASTBOOK + 1)).min(1).required()
 });
 
