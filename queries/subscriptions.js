@@ -14,7 +14,7 @@ const getSubscriptions = (username) => getCollection('subscriptions').then((subs
 });
 
 const getSubscription = (username, id) => getCollection('subscriptions').then((subscriptions) => {
-    return subscriptions.findOne({ username, id }, { projection: { _id: 0, name: 1, verseDosage: 1, bookPool: 1, currentIssue: 1 }}).then((doc) => {
+    return subscriptions.findOne({ username, id }, { projection: { _id: 0, name: 1, verseDosage: 1, isChapterSubscription: 1, bookPool: 1, currentIssue: 1 }}).then((doc) => {
         return doc;
     });
 });
