@@ -1,6 +1,6 @@
 const { dbService: { getCollection }, orderFavorite, orderFavorites } = require('../utils/db');;
 
-const EXP_TIME_MS = 1000 * 60 * 60 * 36;
+const REFRESH_EXP_TIME = 1000 * 60 * 60 * 24 * 7;
 
 const getUserAuthInfo = (username) => getCollection('users').then((users) => {
     return users.findOne({ username }, { projection: { _id: 0 }}).then((doc) => {
@@ -21,13 +21,19 @@ const createRefreshToken = (username, refresh) => getCollection('tokens').then((
 });
 
 const getRefreshToken = (username, refresh) => getCollection('tokens').then((tokens) => {
-    return tokens.findOne({ username, refresh, timestamp: { $gt: Date.now() - EXP_TIME_MS } }).then((doc) => {
+    return tokens.findOne({ username, refresh, timestamp: { $gte: Date.now() - REFRESH_EXP_TIME }}).then((doc) => {
         return doc;
     });
 });
 
-const deleteRefreshTokens = (username) => getCollection('tokens').then((tokens) => {
+const deleteAllRefreshTokens = (username) => getCollection('tokens').then((tokens) => {
     return tokens.deleteMany({ username }).then(({ result }) => {
+        return result.n;
+    });
+});
+
+const deleteExpiredRefreshTokens = (username, ...refreshTokens) => getCollection('tokens').then((tokens) => {
+    return tokens.deleteMany({ username, $or: [{ timestamp: { $lt: Date.now() - REFRESH_EXP_TIME }}, { refresh: { $in: refreshTokens }}]}).then(({ result }) => {
         return result.n;
     });
 });
@@ -67,7 +73,8 @@ module.exports = {
     createUserAccount,
     createRefreshToken,
     getRefreshToken,
-    deleteRefreshTokens,
+    deleteAllRefreshTokens,
+    deleteExpiredRefreshTokens,
     updatePassword,
     deleteUser,
     addFavorite,

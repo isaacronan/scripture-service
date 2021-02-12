@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites } = require('../queries/user');
+const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
 const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema } = require('../utils/routing');
 
@@ -15,7 +15,7 @@ router.post('/login', (req, res, next) => {
         if (doc && doc.password === hashPassword(password, doc.salt)) {
             const token = sign({ username });
             const refresh = await generateRandom();
-            await deleteRefreshTokens(username);
+            await deleteExpiredRefreshTokens(username);
             await createRefreshToken(username, refresh);
             res.json({ message: 'Successful login!', token, refresh });
         } else {
@@ -24,20 +24,21 @@ router.post('/login', (req, res, next) => {
     }).catch(next);
 });
 
-router.get('/logout', authenticate, (req, res, next) => {
-    deleteRefreshTokens(req.user.username).then(() => {
+router.post('/logout', authenticate, (req, res, next) => {
+    const { refresh } = req.body;
+    deleteExpiredRefreshTokens(req.user.username, refresh).then(() => {
         res.json({ message: 'User is deauthenticated.' });
     }).catch(next);
 });
 
 router.post('/refresh', (req, res, next) => {
-    const { username: mixedCase, refresh } = req.body;
+    const { username: mixedCase, refresh: existingRefresh } = req.body;
     const username = mixedCase.toLowerCase();
-    getRefreshToken(username, refresh).then(async (refreshToken) => {
+    getRefreshToken(username, existingRefresh).then(async (refreshToken) => {
         if (refreshToken) {
             const token = sign({ username });
             const refresh = await generateRandom();
-            await deleteRefreshTokens(username);
+            await deleteExpiredRefreshTokens(username, existingRefresh);
             await createRefreshToken(username, refresh);
             res.json({ message: 'New token successfully obtained.', token, refresh });
         } else {
@@ -96,7 +97,7 @@ router.post('/delete', authenticate, async (req, res, next) => {
 
     deleteUser(req.user.username, hashPassword(password, salt)).then(async (numDeleted) => {
         if (numDeleted) {
-            await deleteRefreshTokens(req.user.username);
+            await deleteAllRefreshTokens(req.user.username);
             await deleteSubscriptions(req.user.username);
             res.json({ message: 'User successfully deleted.' });
         } else {
@@ -105,46 +106,46 @@ router.post('/delete', authenticate, async (req, res, next) => {
     }).catch(next);
 });
 
-router.post('/favorites', authenticate, async (req, res, next) => {
-    const favorite = req.body;
+// router.post('/favorites', authenticate, async (req, res, next) => {
+//     const favorite = req.body;
 
-    const validatedFavorite = await favoriteSchema.validate(favorite).catch(() => null);
+//     const validatedFavorite = await favoriteSchema.validate(favorite).catch(() => null);
 
-    if (!validatedFavorite) {
-        res.status(400).json({ error: 'Request format is invalid.' });
-    } else {
-        addFavorite(req.user.username, validatedFavorite).then((numUpdated) => {
-            if (numUpdated) {
-                res.json({ message: 'Favorite successfully added.' });
-            } else {
-                res.status(400).json({ error: 'Favorite not added.' });
-            }
-        }).catch(next);
-    }
-});
+//     if (!validatedFavorite) {
+//         res.status(400).json({ error: 'Request format is invalid.' });
+//     } else {
+//         addFavorite(req.user.username, validatedFavorite).then((numUpdated) => {
+//             if (numUpdated) {
+//                 res.json({ message: 'Favorite successfully added.' });
+//             } else {
+//                 res.status(400).json({ error: 'Favorite not added.' });
+//             }
+//         }).catch(next);
+//     }
+// });
 
-router.get('/favorites', authenticate, (req, res, next) => {
-    getFavorites(req.user.username).then((doc) => {
-        res.json(doc.favorites);
-    }).catch(next);
-});
+// router.get('/favorites', authenticate, (req, res, next) => {
+//     getFavorites(req.user.username).then((doc) => {
+//         res.json(doc.favorites);
+//     }).catch(next);
+// });
 
-router.put('/favorites', authenticate, async (req, res, next) => {
-    const favorites = req.body;
+// router.put('/favorites', authenticate, async (req, res, next) => {
+//     const favorites = req.body;
 
-    const validatedFavorites = await favoritesSchema(req.user.username).validate(favorites).catch(() => null);
+//     const validatedFavorites = await favoritesSchema(req.user.username).validate(favorites).catch(() => null);
 
-    if (!validatedFavorites) {
-        res.status(400).json({ error: 'Request format is invalid.' });
-    } else {
-        updateFavorites(req.user.username, validatedFavorites).then((numUpdated) => {
-            if (!numUpdated) {
-                res.status(400).json({ error: 'Favorites not updated.' });
-            } else {
-                res.json({ message: 'Favorites successfully updated.' });
-            }
-        }).catch(next);
-    }
-});
+//     if (!validatedFavorites) {
+//         res.status(400).json({ error: 'Request format is invalid.' });
+//     } else {
+//         updateFavorites(req.user.username, validatedFavorites).then((numUpdated) => {
+//             if (!numUpdated) {
+//                 res.status(400).json({ error: 'Favorites not updated.' });
+//             } else {
+//                 res.json({ message: 'Favorites successfully updated.' });
+//             }
+//         }).catch(next);
+//     }
+// });
 
 module.exports = router;

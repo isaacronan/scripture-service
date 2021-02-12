@@ -7,6 +7,7 @@ const { getVerse } = require('../queries/text');
 const { getFavorites } = require('../queries/user');
 
 const SECRET = process.env.SECRET;
+const JWT_EXP_TIME = 60 * 15;
 
 const LASTBOOK = 73;
 const feedbackReportTypes = ['TYPO', 'NMBR'];
@@ -24,7 +25,7 @@ const checkResultsAndRespond = (res, errorMessage = '') => (results) => {
     }
 };
 
-const sign = payload => jwt.sign(payload, SECRET, { expiresIn: 30 * 60 });
+const sign = payload => jwt.sign(payload, SECRET, { expiresIn: JWT_EXP_TIME });
 
 const authenticate = passport.authenticate('jwt', { session: false });
 
