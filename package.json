@@ -1,7 +1,11 @@
 {
-  "name": "rest-server",
+  "name": "scripture-service",
   "version": "1.0.0",
-  "description": "",
+  "description": "REST service for Scripture app. Built on Express.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isaacronan/scripture-service"
+  },
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
