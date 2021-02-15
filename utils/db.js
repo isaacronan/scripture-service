@@ -4,13 +4,14 @@ class DatabaseService {
     connectedClient = null;
 
     getDb() {
+        const { DBHOST = 'localhost', DBPORT = 27017, DBNAME = 'scripture' } = process.env;
         if (this.connectedClient && this.connectedClient.isConnected()) {
-            return Promise.resolve(this.connectedClient.db(process.env.DBNAME));
+            return Promise.resolve(this.connectedClient.db(DBNAME));
         }
 
-        return MongoClient.connect(`mongodb://${process.env.DBHOST}:${process.env.DBPORT}`, { useUnifiedTopology: true }).then((connectedClient) => {
+        return MongoClient.connect(`mongodb://${DBHOST}:${DBPORT}`, { useUnifiedTopology: true }).then((connectedClient) => {
             this.connectedClient = connectedClient;
-            return connectedClient.db(process.env.DBNAME);
+            return connectedClient.db(DBNAME);
         }).catch(() => {
             console.log('could not connect to database...');
         });

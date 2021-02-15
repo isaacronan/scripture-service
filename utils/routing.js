@@ -6,7 +6,7 @@ const yup = require('yup');
 const { getVerse } = require('../queries/text');
 const { getFavorites } = require('../queries/user');
 
-const SECRET = process.env.SECRET;
+const SECRET = process.env.SECRET || 'secret';
 const JWT_EXP_TIME = 60 * 15;
 
 const LASTBOOK = 73;

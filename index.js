@@ -6,7 +6,7 @@ const passport = require('passport');
 const { SECRET } = require('./utils/routing');
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8001;
 
 const books = require('./routes/text');
 const subscriptions = require('./routes/subscriptions');
