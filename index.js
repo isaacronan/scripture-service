@@ -16,6 +16,14 @@ const books = require('./routes/text');
 const subscriptions = require('./routes/subscriptions');
 const user = require('./routes/user');
 
+const template = fs.readFileSync('./static/scripture.html').toString();
+const render = (initialRoute, prefetched) => {
+    const { head, html } = ssr.render({ initialRoute, prefetched });
+    const rendered = template.replace('</head>', `${head}</head>`)
+        .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`)
+    return rendered;
+};
+
 const apiRouter = express.Router();
 const ssrRouter = express.Router();
 
@@ -38,41 +46,23 @@ ssrRouter.get('/books/:booknumber', async (req, res) => {
     const { booknumber } = req.params;
     const [books, chapters] = await Promise.all([getBooks(), getChapters(Number(booknumber))]);
     const prefetched = chapters.length ? { books, chapters } : { books };
-    const { head, html } = ssr.render({ prefetched, initialRoute: req.originalUrl });
-
-    fs.readFile('./static/scripture.html', (_, content) => {
-        const rendered = content.toString()
-            .replace('</head>', `${head}</head>`)
-            .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`)
-        res.send(rendered);
-    });
+    
+    res.send(render(req.originalUrl, prefetched));
 });
 
 ssrRouter.get('/books/:booknumber/chapters/:chapternumber', async (req, res) => {
     const { booknumber, chapternumber } = req.params;
     const [books, chapters, verses] = await Promise.all([getBooks(), getChapters(Number(booknumber)), getChapter(Number(booknumber), Number(chapternumber))]);
     const prefetched = (chapters.length && verses.length) ? { books, chapters, verses } : { books };
-    const { head, html } = ssr.render({ prefetched, initialRoute: req.originalUrl });
-
-    fs.readFile('./static/scripture.html', (_, content) => {
-        const rendered = content.toString()
-            .replace('</head>', `${head}</head>`)
-            .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`)
-        res.send(rendered);
-    });
+    
+    res.send(render(req.originalUrl, prefetched));
 });
 
 ssrRouter.get(/\/\.*/, async (req, res) => {
     const books = await getBooks();
     const prefetched = { books };
-    const { head, html } = ssr.render({ prefetched, initialRoute: req.originalUrl });
-
-    fs.readFile('./static/scripture.html', (_, content) => {
-        const rendered = content.toString()
-            .replace('</head>', `${head}</head>`)
-            .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`)
-        res.send(rendered);
-    });
+    
+    res.send(render(req.originalUrl, prefetched));
 });
 
 passport.use(new Strategy({ secretOrKey: SECRET, jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken() }, ({ username }, done) => {
