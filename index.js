@@ -20,8 +20,8 @@ const apiRouter = express.Router();
 const ssrRouter = express.Router();
 
 app.use('/scripture', express.static('static'));
-app.use('/scripture', ssrRouter);
 app.use('/scripture/api', apiRouter);
+app.use('/scripture', ssrRouter);
 app.use(passport.initialize());
 
 apiRouter.use('/books', books);
@@ -32,19 +32,6 @@ apiRouter.use((_req, res) => {
 });
 apiRouter.use((_err, _req, res, _next) => {
     res.status(500).send({ error: 'Server error encountered.' });
-});
-
-ssrRouter.get('/', async (_, res) => {
-    const books = await getBooks();
-    const prefetched = { books };
-    const { head, html } = ssr.render({ prefetched });
-
-    fs.readFile('./static/scripture.html', (_, content) => {
-        const rendered = content.toString()
-            .replace('</head>', `${head}</head>`)
-            .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`)
-        res.send(rendered);
-    });
 });
 
 ssrRouter.get('/books/:booknumber', async (req, res) => {
@@ -65,6 +52,19 @@ ssrRouter.get('/books/:booknumber/chapters/:chapternumber', async (req, res) => 
     const { booknumber, chapternumber } = req.params;
     const [books, chapters, verses] = await Promise.all([getBooks(), getChapters(Number(booknumber)), getChapter(Number(booknumber), Number(chapternumber))]);
     const prefetched = { books, chapters, verses };
+    const { head, html } = ssr.render({ prefetched });
+
+    fs.readFile('./static/scripture.html', (_, content) => {
+        const rendered = content.toString()
+            .replace('</head>', `${head}</head>`)
+            .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`)
+        res.send(rendered);
+    });
+});
+
+ssrRouter.get(/\/\.*/, async (_, res) => {
+    const books = await getBooks();
+    const prefetched = { books };
     const { head, html } = ssr.render({ prefetched });
 
     fs.readFile('./static/scripture.html', (_, content) => {
