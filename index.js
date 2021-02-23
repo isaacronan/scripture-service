@@ -37,8 +37,8 @@ apiRouter.use((_err, _req, res, _next) => {
 ssrRouter.get('/books/:booknumber', async (req, res) => {
     const { booknumber } = req.params;
     const [books, chapters] = await Promise.all([getBooks(), getChapters(Number(booknumber))]);
-    const prefetched = { books, chapters };
-    const { head, html } = ssr.render({ prefetched });
+    const prefetched = chapters.length ? { books, chapters } : { books };
+    const { head, html } = ssr.render({ prefetched, initialRoute: req.originalUrl });
 
     fs.readFile('./static/scripture.html', (_, content) => {
         const rendered = content.toString()
@@ -51,8 +51,8 @@ ssrRouter.get('/books/:booknumber', async (req, res) => {
 ssrRouter.get('/books/:booknumber/chapters/:chapternumber', async (req, res) => {
     const { booknumber, chapternumber } = req.params;
     const [books, chapters, verses] = await Promise.all([getBooks(), getChapters(Number(booknumber)), getChapter(Number(booknumber), Number(chapternumber))]);
-    const prefetched = { books, chapters, verses };
-    const { head, html } = ssr.render({ prefetched });
+    const prefetched = (chapters.length && verses.length) ? { books, chapters, verses } : { books };
+    const { head, html } = ssr.render({ prefetched, initialRoute: req.originalUrl });
 
     fs.readFile('./static/scripture.html', (_, content) => {
         const rendered = content.toString()
@@ -62,10 +62,10 @@ ssrRouter.get('/books/:booknumber/chapters/:chapternumber', async (req, res) => 
     });
 });
 
-ssrRouter.get(/\/\.*/, async (_, res) => {
+ssrRouter.get(/\/\.*/, async (req, res) => {
     const books = await getBooks();
     const prefetched = { books };
-    const { head, html } = ssr.render({ prefetched });
+    const { head, html } = ssr.render({ prefetched, initialRoute: req.originalUrl });
 
     fs.readFile('./static/scripture.html', (_, content) => {
         const rendered = content.toString()
