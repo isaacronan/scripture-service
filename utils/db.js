@@ -4,12 +4,13 @@ class DatabaseService {
     connectedClient = null;
 
     getDb() {
-        const { DBHOST = 'localhost', DBPORT = 27017, DBNAME = 'scripture' } = process.env;
+        const { DBHOST = 'localhost', DBPORT = 27017, DBNAME = 'scripture', DBUSERNAME = '', DBPASSWORD = '' } = process.env;
         if (this.connectedClient && this.connectedClient.isConnected()) {
             return Promise.resolve(this.connectedClient.db(DBNAME));
         }
 
-        return MongoClient.connect(`mongodb://${DBHOST}:${DBPORT}`, { useUnifiedTopology: true }).then((connectedClient) => {
+        const url = (DBUSERNAME && DBPASSWORD) ? `mongodb://${DBUSERNAME}:${DBPASSWORD}@${DBHOST}:${DBPORT}?authMechanism=DEFAULT` : `mongodb://${DBHOST}:${DBPORT}`;
+        return MongoClient.connect(url, { useUnifiedTopology: true }).then((connectedClient) => {
             this.connectedClient = connectedClient;
             return connectedClient.db(DBNAME);
         }).catch(() => {
