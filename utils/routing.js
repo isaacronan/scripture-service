@@ -4,10 +4,11 @@ const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
 const { getVerse } = require('../queries/text');
-const { getFavorites } = require('../queries/user');
+const { getFavorites, REFRESH_EXP_TIME } = require('../queries/user');
 
 const SECRET = process.env.SECRET || 'secret';
 const JWT_EXP_TIME = 60 * 15;
+const BASE_PATH = '/scripture';
 
 const LASTBOOK = 73;
 const feedbackReportTypes = ['TYPO', 'NMBR'];
@@ -23,6 +24,17 @@ const checkResultsAndRespond = (res, errorMessage = '') => (results) => {
     } else {
         res.status(404).send({ error: errorMessage });
     }
+};
+
+const setRefreshCookies = (res, username, refresh) => {
+    const cookieExpiry = new Date(Date.now() + REFRESH_EXP_TIME);
+    res.cookie('username', username, { path: BASE_PATH, httpOnly: true, expires: cookieExpiry });
+    res.cookie('refresh', refresh, { path: BASE_PATH, httpOnly: true, expires: cookieExpiry });
+};
+
+const unsetRefreshCookies = (res) => {
+    res.cookie('username', '', { path: BASE_PATH, httpOnly: true, expires: new Date(0) });
+    res.cookie('refresh', '', { path: BASE_PATH, httpOnly: true, expires: new Date(0) });
 };
 
 const sign = payload => jwt.sign(payload, SECRET, { expiresIn: JWT_EXP_TIME });
@@ -147,5 +159,8 @@ module.exports = {
     hashPassword,
     favoriteSchema,
     favoritesSchema,
-    feedbackReportSchema
+    feedbackReportSchema,
+    setRefreshCookies,
+    unsetRefreshCookies,
+    BASE_PATH
 };

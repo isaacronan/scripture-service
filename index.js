@@ -3,8 +3,9 @@ const fs = require('fs');
 const express = require('express');
 const { Strategy, ExtractJwt } = require('passport-jwt');
 const passport = require('passport');
+const cookieParser = require('cookie-parser');
 
-const { SECRET } = require('./utils/routing');
+const { SECRET, BASE_PATH } = require('./utils/routing');
 
 const { getBooks, getChapters, getChapter } = require('./queries/text');
 const ssr = require('./scripture-ssr').default;
@@ -27,10 +28,11 @@ const render = (initialRoute, prefetched) => {
 const apiRouter = express.Router();
 const ssrRouter = express.Router();
 
-app.use('/scripture', express.static('static'));
-app.use('/scripture/api', apiRouter);
-app.use('/scripture', ssrRouter);
+app.use(cookieParser());
 app.use(passport.initialize());
+app.use(BASE_PATH, express.static('static'));
+app.use(`${BASE_PATH}/api`, apiRouter);
+app.use(BASE_PATH, ssrRouter);
 
 apiRouter.use('/books', books);
 apiRouter.use('/subscriptions', subscriptions);

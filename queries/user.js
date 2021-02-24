@@ -79,5 +79,6 @@ module.exports = {
     deleteUser,
     addFavorite,
     getFavorites,
-    updateFavorites
+    updateFavorites,
+    REFRESH_EXP_TIME
 };

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites } = require('../queries/user');
+const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites, REFRESH_EXP_TIME } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
-const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema } = require('../utils/routing');
+const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies } = require('../utils/routing');
 
 router.use(express.json());
 
@@ -17,34 +17,42 @@ router.post('/login', (req, res, next) => {
             const refresh = await generateRandom();
             await deleteExpiredRefreshTokens(username);
             await createRefreshToken(username, refresh);
-            res.json({ message: 'Successful login!', token, refresh });
+            setRefreshCookies(res, username, refresh);
+            res.json({ message: 'Successful login!', token });
         } else {
             res.status(400).json({ error: 'Credentials don\'t match!' })
         }
     }).catch(next);
 });
 
-router.post('/logout', authenticate, (req, res, next) => {
-    const { refresh } = req.body;
+router.get('/logout', authenticate, (req, res, next) => {
+    const { refresh = null } = req.cookies;
     deleteExpiredRefreshTokens(req.user.username, refresh).then(() => {
+        unsetRefreshCookies(res);
         res.json({ message: 'User is deauthenticated.' });
     }).catch(next);
 });
 
-router.post('/refresh', (req, res, next) => {
-    const { username: mixedCase, refresh: existingRefresh } = req.body;
-    const username = mixedCase.toLowerCase();
-    getRefreshToken(username, existingRefresh).then(async (refreshToken) => {
-        if (refreshToken) {
-            const token = sign({ username });
-            const refresh = await generateRandom();
-            await deleteExpiredRefreshTokens(username, existingRefresh);
-            await createRefreshToken(username, refresh);
-            res.json({ message: 'New token successfully obtained.', token, refresh });
-        } else {
-            res.status(400).send({ error: 'Refresh token is invalid.' });
-        }
-    }).catch(next);
+router.get('/refresh', (req, res, next) => {
+    if (req.cookies.username && req.cookies.refresh) {
+        const { username: mixedCase, refresh: existingRefresh } = req.cookies;
+        const username = mixedCase.toLowerCase();
+        getRefreshToken(username, existingRefresh).then(async (refreshToken) => {
+            if (refreshToken) {
+                const token = sign({ username });
+                const refresh = await generateRandom();
+                await deleteExpiredRefreshTokens(username, existingRefresh);
+                await createRefreshToken(username, refresh);
+                setRefreshCookies(res, username, refresh);
+                res.json({ message: 'New token successfully obtained.', token });
+            } else {
+                res.status(400).send({ error: 'Refresh token is invalid.' });
+            }
+        }).catch(next);
+    } else {
+        unsetRefreshCookies(res);
+        res.status(400).send({ error: 'No refresh token found.' });
+    }
 });
 
 router.post('/create', async (req, res, next) => {
@@ -99,6 +107,7 @@ router.post('/delete', authenticate, async (req, res, next) => {
         if (numDeleted) {
             await deleteAllRefreshTokens(req.user.username);
             await deleteSubscriptions(req.user.username);
+            unsetRefreshCookies(res);
             res.json({ message: 'User successfully deleted.' });
         } else {
             res.status(400).json({ error: 'Credentials don\'t match.' });
