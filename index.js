@@ -65,7 +65,7 @@ ssrRouter.get('/books/:booknumber/chapters/:chapternumber', async (req, res) => 
     res.send(render(req.originalUrl, prefetched));
 });
 
-ssrRouter.get('/dashboard', async (req, res) => {
+ssrRouter.get(/(\/dashboard|\/subscription\/edit)/, async (req, res) => {
     const { username, token } = res.locals.refresh;
     const [books, subscriptions] = await Promise.all(token ? [getBooks(), getSubscriptions(username)] : [getBooks()]);
     const prefetched = token ? { books, subscriptions } : { books };
