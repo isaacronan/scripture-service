@@ -4,10 +4,11 @@ const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
 const { getVerse } = require('../queries/text');
-const { getFavorites, REFRESH_EXP_TIME } = require('../queries/user');
+const { getFavorites, REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken } = require('../queries/user');
 
 const SECRET = process.env.SECRET || 'secret';
 const JWT_EXP_TIME = 60 * 15;
+const TOKEN_DNE = '';
 const BASE_PATH = '/scripture';
 
 const LASTBOOK = 73;
@@ -146,6 +147,31 @@ const hashPassword = (password, salt) => {
     return hash.digest().toString('hex');
 };
 
+const refreshMiddleware = (req, res, next) => {
+    if (req.cookies.username && req.cookies.refresh) {
+        const { username: mixedCase, refresh: existingRefresh } = req.cookies;
+        const username = mixedCase.toLowerCase();
+        getRefreshToken(username, existingRefresh).then(async (refreshToken) => {
+            if (refreshToken) {
+                const token = sign({ username });
+                const refresh = await generateRandom();
+                await deleteExpiredRefreshTokens(username, existingRefresh);
+                await createRefreshToken(username, refresh);
+                setRefreshCookies(res, username, refresh);
+                res.locals.refresh = { token: token, message: 'New token successfully obtained.' };
+            } else {
+                res.locals.refresh = { token: TOKEN_DNE, message: 'Refresh token is invalid.' };
+                unsetRefreshCookies(res);
+            }
+            next();
+        }).catch(next);
+    } else {
+        res.locals.refresh = { token: TOKEN_DNE, message: 'No refresh token found.' };
+        unsetRefreshCookies(res);
+        next();
+    }
+};
+
 module.exports = {
     SECRET,
     checkResultsAndRespond,
@@ -162,5 +188,6 @@ module.exports = {
     feedbackReportSchema,
     setRefreshCookies,
     unsetRefreshCookies,
-    BASE_PATH
+    BASE_PATH,
+    refreshMiddleware
 };

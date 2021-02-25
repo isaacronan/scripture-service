@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites, REFRESH_EXP_TIME } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
-const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies } = require('../utils/routing');
+const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies, refreshMiddleware } = require('../utils/routing');
 
 router.use(express.json());
 
@@ -33,25 +33,12 @@ router.get('/logout', authenticate, (req, res, next) => {
     }).catch(next);
 });
 
-router.get('/refresh', (req, res, next) => {
-    if (req.cookies.username && req.cookies.refresh) {
-        const { username: mixedCase, refresh: existingRefresh } = req.cookies;
-        const username = mixedCase.toLowerCase();
-        getRefreshToken(username, existingRefresh).then(async (refreshToken) => {
-            if (refreshToken) {
-                const token = sign({ username });
-                const refresh = await generateRandom();
-                await deleteExpiredRefreshTokens(username, existingRefresh);
-                await createRefreshToken(username, refresh);
-                setRefreshCookies(res, username, refresh);
-                res.json({ message: 'New token successfully obtained.', token });
-            } else {
-                res.status(400).send({ error: 'Refresh token is invalid.' });
-            }
-        }).catch(next);
+router.get('/refresh', refreshMiddleware, (_, res) => {
+    const { token, message } = res.locals.refresh;
+    if (token) {
+        res.json({ message, token });
     } else {
-        unsetRefreshCookies(res);
-        res.status(400).send({ error: 'No refresh token found.' });
+        res.status(400).send({ error: message });
     }
 });
 
