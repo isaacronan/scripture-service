@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const { SECRET, BASE_PATH, refreshMiddleware } = require('./utils/routing');
 
 const { getBooks, getChapters, getChapter } = require('./queries/text');
+const { getSubscriptions, getSubscription, getCurrentIssue } = require('./queries/subscriptions');
 const ssr = require('./scripture-ssr').default;
 
 const app = express();
@@ -60,6 +61,29 @@ ssrRouter.get('/books/:booknumber/chapters/:chapternumber', async (req, res) => 
     const [books, chapters, verses] = await Promise.all([getBooks(), getChapters(Number(booknumber)), getChapter(Number(booknumber), Number(chapternumber))]);
     const prefetched = (chapters.length && verses.length) ? { books, chapters, verses } : { books };
     prefetched.token = res.locals.refresh.token;
+    
+    res.send(render(req.originalUrl, prefetched));
+});
+
+ssrRouter.get('/dashboard', async (req, res) => {
+    const { username, token } = res.locals.refresh;
+    const [books, subscriptions] = await Promise.all(token ? [getBooks(), getSubscriptions(username)] : [getBooks()]);
+    const prefetched = token ? { books, subscriptions } : { books };
+    prefetched.token = token;
+    
+    res.send(render(req.originalUrl, prefetched));
+});
+
+ssrRouter.get('/subscription/:id', async (req, res) => {
+    const { id } = req.params;
+    const { username, token } = res.locals.refresh;
+    const [books, subscription] = await Promise.all(token ? [getBooks(), getSubscription(username, id)] : [getBooks()]);
+    const prefetched = { books, token };
+    
+    if (subscription) {
+        prefetched.subscription = subscription.currentIssue === null ?
+            { ...subscription, books: [], nextIssue: null } : await getCurrentIssue(subscription);
+    }
     
     res.send(render(req.originalUrl, prefetched));
 });

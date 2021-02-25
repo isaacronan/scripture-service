@@ -158,7 +158,7 @@ const refreshMiddleware = (req, res, next) => {
                 await deleteExpiredRefreshTokens(username, existingRefresh);
                 await createRefreshToken(username, refresh);
                 setRefreshCookies(res, username, refresh);
-                res.locals.refresh = { token: token, message: 'New token successfully obtained.' };
+                res.locals.refresh = { username, token: token, message: 'New token successfully obtained.' };
             } else {
                 res.locals.refresh = { token: TOKEN_DNE, message: 'Refresh token is invalid.' };
                 unsetRefreshCookies(res);
