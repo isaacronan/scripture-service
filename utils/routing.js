@@ -1,11 +1,15 @@
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
-const { getVerse } = require('../queries/text');
+const { getVerse, getBooks, getChapters, getChapter } = require('../queries/text');
 const { getFavorites, REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken } = require('../queries/user');
-const { getSubscription } = require('../queries/subscriptions');
+const { getSubscription, getSubscriptions, getCurrentIssue } = require('../queries/subscriptions');
+
+const ssr = require('../scripture-ssr').default;
 
 const SECRET = process.env.SECRET || 'secret';
 const JWT_EXP_TIME = 60 * 15;
@@ -18,6 +22,14 @@ const feedbackReportTypes = ['TYPO', 'NMBR'];
 const subscriptionNamePattern = /\S+/;
 const usernamePattern = /^\w+$/;
 const passwordPattern = /^\S+$/;
+
+const template = fs.readFileSync(path.resolve(__dirname, '../static/scripture.html')).toString();
+const render = (initialRoute, prefetched) => {
+    const { head, html } = ssr.render({ initialRoute, prefetched });
+    const rendered = template.replace('</head>', `${head}</head>`)
+        .replace('<body>', `<body>${html}<script>window.__PREFETCHED__=${JSON.stringify(prefetched)}</script>`);
+    return rendered;
+};
 
 const checkResultsAndRespond = (res, errorMessage = '') => (results) => {
     const isEmptyArray = Array.isArray(results) && !results.length;
@@ -182,6 +194,52 @@ const refreshMiddleware = (req, res, next) => {
     }
 };
 
+const ssrMiddleware = (necessaryDataFields = []) => async (req, res) => {
+    const { booknumber, chapternumber, id } = req.params;
+    const { username, token } = res.locals.refresh;
+
+    const dataSources = {
+        books: getBooks(),
+        chapters: getChapters(Number(booknumber)),
+        verses: getChapter(Number(booknumber), Number(chapternumber)),
+        subscriptions: getSubscriptions(username),
+        subscription: getSubscription(username, id)
+    };
+    const necessarySources = necessaryDataFields.map(field => dataSources[field]);
+    
+    const {
+        books,
+        chapters,
+        verses,
+        subscriptions,
+        subscription
+    } = (await Promise.all(necessarySources)).reduce((acc, data, index) => ({ ...acc, [necessaryDataFields[index]]: data }), {});
+
+    const prefetched = { token };
+
+    if (books) {
+        prefetched.books = books;
+    }
+
+    if (chapters?.length && verses?.length) {
+        prefetched.chapters = chapters;
+        prefetched.verses = verses;
+    } else if (chapters?.length && !verses) {
+        prefetched.chapters = chapters;
+    }
+
+    if (token && subscriptions) {
+        prefetched.subscriptions = subscriptions;
+    }
+
+    if (subscription) {
+        prefetched.subscription = subscription.currentIssue === null ?
+            { ...subscription, books: [], nextIssue: null } : await getCurrentIssue(subscription);
+    }
+
+    res.send(render(req.originalUrl, prefetched));
+};
+
 module.exports = {
     SECRET,
     checkResultsAndRespond,
@@ -200,5 +258,6 @@ module.exports = {
     unsetRefreshCookies,
     BASE_PATH,
     refreshMiddleware,
-    generateSubscriptionId
+    generateSubscriptionId,
+    ssrMiddleware
 };
