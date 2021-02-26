@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
 const { dbService: { getCollection }, constructIssuePipeline, constructIssueResponse, constructCurrentIssue } = require('../utils/db');
 
 const getCurrentIssue = (subscription) => getCollection('verses').then((verses) => {
@@ -38,8 +37,7 @@ const updateSubscription = (username, id, subscription) => getCollection('subscr
     });
 });
 
-const createSubscription = (username, subscription) => getCollection('subscriptions').then((subscriptions) => {
-    const id = uuidv4();
+const createSubscription = (username, subscription, id) => getCollection('subscriptions').then((subscriptions) => {
     return subscriptions.insertOne({ username, id, ...subscription, currentIssue: constructCurrentIssue(subscription) }).then(() => {
         return id;
     });

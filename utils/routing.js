@@ -5,6 +5,7 @@ const yup = require('yup');
 
 const { getVerse } = require('../queries/text');
 const { getFavorites, REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken } = require('../queries/user');
+const { getSubscription } = require('../queries/subscriptions');
 
 const SECRET = process.env.SECRET || 'secret';
 const JWT_EXP_TIME = 60 * 15;
@@ -135,10 +136,19 @@ const feedbackReportSchema = yup.object().noUnknown().shape({
     type: yup.string().oneOf(feedbackReportTypes).required()
 }).test('', '', feedbackReportValidator);
 
-const generateRandom = () => new Promise((resolve) => {
-    crypto.randomBytes(16, (_err, buf) => {
+const generateRandom = (size = 16) => new Promise((resolve) => {
+    crypto.randomBytes(size, (_err, buf) => {
         resolve(buf.toString('hex'));
     });
+});
+
+const generateSubscriptionId = (username) => new Promise(async (resolve) => {
+    let id = null, attempts = 5;
+    do {
+        id = await generateRandom(2);
+    } while(await getSubscription(username, id) && --attempts);
+
+    resolve(attempts ? id : null);
 });
 
 const hashPassword = (password, salt) => {
@@ -189,5 +199,6 @@ module.exports = {
     setRefreshCookies,
     unsetRefreshCookies,
     BASE_PATH,
-    refreshMiddleware
+    refreshMiddleware,
+    generateSubscriptionId
 };

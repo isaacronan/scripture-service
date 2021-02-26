@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { authenticate, updateSubscriptionSchema, createSubscriptionSchema } = require('../utils/routing');
+const { authenticate, updateSubscriptionSchema, createSubscriptionSchema, generateSubscriptionId } = require('../utils/routing');
 const { getCurrentIssue, getSubscriptions, getSubscription, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());
@@ -22,7 +22,10 @@ router.post('/', authenticate, async (req, res, next) => {
     if (!validatedSubscription) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        createSubscription(username, validatedSubscription).then((id) => {
+        const id = await generateSubscriptionId(username);
+        if (!id) {
+            res.status(500).json({ error: 'Subscription ID could not be generated.' });
+        } else createSubscription(username, validatedSubscription, id).then((id) => {
             if (id) {
                 res.json({ message: 'Subscription created.', id });
             } else {
