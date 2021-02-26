@@ -15,7 +15,7 @@ const BASE_PATH = '/scripture';
 const LASTBOOK = 73;
 const feedbackReportTypes = ['TYPO', 'NMBR'];
 
-const subscriptionNamePattern = /^\w+$/;
+const subscriptionNamePattern = /\S+/;
 const usernamePattern = /^\w+$/;
 const passwordPattern = /^\S+$/;
 
