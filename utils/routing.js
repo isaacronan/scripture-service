@@ -9,7 +9,7 @@ const { getVerse, getBooks, getChapters, getChapter } = require('../queries/text
 const { getFavorites, REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken } = require('../queries/user');
 const { getSubscription, getSubscriptions, getCurrentIssue } = require('../queries/subscriptions');
 
-const ssr = require('../scripture-ssr').default;
+const ssr = require('../ssr/scripture-ssr');
 
 const SECRET = process.env.SECRET || 'secret';
 const JWT_EXP_TIME = 60 * 15;
@@ -23,7 +23,7 @@ const subscriptionNamePattern = /\S+/;
 const usernamePattern = /^\w+$/;
 const passwordPattern = /^\S+$/;
 
-const template = fs.readFileSync(path.resolve(__dirname, '../static/scripture.html')).toString();
+const template = fs.readFileSync(path.resolve(__dirname, '../ssr/scripture.html')).toString();
 const render = (initialRoute, prefetched) => {
     const { head, html } = ssr.render({ initialRoute, prefetched });
     const rendered = template.replace('</head>', `${head}</head>`)

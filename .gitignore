@@ -1,4 +1,5 @@
 static/
+ssr/
 node_modules/
 .env
 scripture-ssr.js
