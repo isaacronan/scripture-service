@@ -124,7 +124,7 @@ router.post('/favorites', authenticate, async (req, res, next) => {
 router.get('/favorites', authenticate, (req, res, next) => {
     getFavorites(req.user.username).then(async (doc) => {
         const { favorites: favoritesRanges } = doc;
-        const selectedText = await getSelectedText(favoritesRanges);
+        const selectedText = favoritesRanges.length ? await getSelectedText(favoritesRanges) : [];
         const favorites = favoritesRanges.map((favoritesRange) => ({
             ...favoritesRange,
             verses: selectedText
