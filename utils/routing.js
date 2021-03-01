@@ -17,7 +17,6 @@ const TOKEN_DNE = '';
 const BASE_PATH = '/scripture';
 
 const LASTBOOK = 73;
-const feedbackReportTypes = ['TYPO', 'NMBR'];
 
 const subscriptionNamePattern = /\S+/;
 const usernamePattern = /^\w+$/;
@@ -144,8 +143,7 @@ const favoritesSchema = (username) => yup.array().of(yup.object().noUnknown().sh
 const feedbackReportSchema = yup.object().noUnknown().shape({
     booknumber: yup.number().integer().positive().lessThan(LASTBOOK + 1).required(),
     chapternumber: yup.number().integer().positive().required(),
-    versenumber: yup.number().integer().positive().required(),
-    type: yup.string().oneOf(feedbackReportTypes).required()
+    versenumber: yup.number().integer().positive().required()
 }).test('', '', feedbackReportValidator);
 
 const generateRandom = (size = 16) => new Promise((resolve) => {

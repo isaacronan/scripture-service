@@ -4,6 +4,7 @@ const router = express.Router();
 const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites, REFRESH_EXP_TIME } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
 const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies, refreshMiddleware } = require('../utils/routing');
+const { getSelectedText } = require('../queries/text');
 
 router.use(express.json());
 
@@ -102,46 +103,55 @@ router.post('/delete', authenticate, async (req, res, next) => {
     }).catch(next);
 });
 
-// router.post('/favorites', authenticate, async (req, res, next) => {
-//     const favorite = req.body;
+router.post('/favorites', authenticate, async (req, res, next) => {
+    const favorite = req.body;
 
-//     const validatedFavorite = await favoriteSchema.validate(favorite).catch(() => null);
+    const validatedFavorite = await favoriteSchema.validate(favorite).catch(() => null);
 
-//     if (!validatedFavorite) {
-//         res.status(400).json({ error: 'Request format is invalid.' });
-//     } else {
-//         addFavorite(req.user.username, validatedFavorite).then((numUpdated) => {
-//             if (numUpdated) {
-//                 res.json({ message: 'Favorite successfully added.' });
-//             } else {
-//                 res.status(400).json({ error: 'Favorite not added.' });
-//             }
-//         }).catch(next);
-//     }
-// });
+    if (!validatedFavorite) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    } else {
+        addFavorite(req.user.username, validatedFavorite).then((numUpdated) => {
+            if (numUpdated) {
+                res.json({ message: 'Favorite successfully added.' });
+            } else {
+                res.status(400).json({ error: 'Favorite not added.' });
+            }
+        }).catch(next);
+    }
+});
 
-// router.get('/favorites', authenticate, (req, res, next) => {
-//     getFavorites(req.user.username).then((doc) => {
-//         res.json(doc.favorites);
-//     }).catch(next);
-// });
+router.get('/favorites', authenticate, (req, res, next) => {
+    getFavorites(req.user.username).then(async (doc) => {
+        const { favorites: favoritesRanges } = doc;
+        const selectedText = await getSelectedText(favoritesRanges);
+        const favorites = favoritesRanges.map((favoritesRange) => ({
+            ...favoritesRange,
+            verses: selectedText
+                .find(({ booknumber }) => booknumber === favoritesRange.booknumber).chapters
+                .find(({ chapternumber }) => chapternumber === favoritesRange.chapternumber).verses
+                .filter(({ versenumber }) => versenumber >= favoritesRange.start && versenumber <= favoritesRange.end)
+        }));
+        res.json(favorites);
+    }).catch(next);
+});
 
-// router.put('/favorites', authenticate, async (req, res, next) => {
-//     const favorites = req.body;
+router.put('/favorites', authenticate, async (req, res, next) => {
+    const favorites = req.body;
 
-//     const validatedFavorites = await favoritesSchema(req.user.username).validate(favorites).catch(() => null);
+    const validatedFavorites = await favoritesSchema(req.user.username).validate(favorites).catch(() => null);
 
-//     if (!validatedFavorites) {
-//         res.status(400).json({ error: 'Request format is invalid.' });
-//     } else {
-//         updateFavorites(req.user.username, validatedFavorites).then((numUpdated) => {
-//             if (!numUpdated) {
-//                 res.status(400).json({ error: 'Favorites not updated.' });
-//             } else {
-//                 res.json({ message: 'Favorites successfully updated.' });
-//             }
-//         }).catch(next);
-//     }
-// });
+    if (!validatedFavorites) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    } else {
+        updateFavorites(req.user.username, validatedFavorites).then((numUpdated) => {
+            if (!numUpdated) {
+                res.status(400).json({ error: 'Favorites not updated.' });
+            } else {
+                res.json({ message: 'Favorites successfully updated.' });
+            }
+        }).catch(next);
+    }
+});
 
 module.exports = router;

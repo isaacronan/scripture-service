@@ -35,6 +35,33 @@ const getVerse = (booknumber, chapternumber, versenumber) => getCollection('vers
     });
 });
 
+const getSelectedText = (verseRanges) => getCollection('verses').then((verses) => {
+    return verses.aggregate([
+        { $match: { $or: [
+            ...verseRanges.map(({ booknumber, chapternumber, start, end }) => ({ $and: [
+                { booknumber, chapternumber }, { versenumber: { $gte: start }}, { versenumber: { $lte: end }}
+            ]}))
+        ]}},
+        { $sort: { versenumber: 1 }},
+        { $project: { _id: false }},
+        { $group: {
+            _id: { booknumber: '$booknumber', chapternumber: '$chapternumber' },
+            verses: { $push: '$$ROOT' }
+        }},
+        { $group: {
+            _id: { booknumber: '$_id.booknumber' },
+            chapters: { $push: { chapternumber: '$_id.chapternumber', verses: '$verses' } }
+        }},
+        { $project: {
+            _id: false,
+            booknumber: '$_id.booknumber',
+            chapters: '$chapters'
+        }}
+    ]).toArray().then((docs) => {
+        return docs;
+    });
+});
+
 const createFeedback = (feedbackReport) => getCollection('feedback').then((feedback) => {
     return feedback.insertOne({ ...feedbackReport, timestamp: Date.now() }).then(({ result }) => {
         return result.n;
@@ -47,5 +74,6 @@ module.exports = {
     getChapters,
     getChapter,
     getVerse,
-    createFeedback
+    createFeedback,
+    getSelectedText
 };
