@@ -20,8 +20,8 @@ const LASTBOOK = 73;
 const MAXLENGTH = 100;
 
 const subscriptionNamePattern = /\S+/;
-const usernamePattern = /^\w+$/;
-const passwordPattern = /^\S+$/;
+const usernamePattern = /^\S+$/;
+const passwordPattern = /^.+$/;
 
 const template = fs.readFileSync(path.resolve(__dirname, '../ssr/scripture.html')).toString();
 const render = (initialRoute, prefetched) => {
