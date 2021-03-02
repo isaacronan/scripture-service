@@ -1,4 +1,4 @@
-const { dbService: { getCollection }, constructBoundedVerseQuery } = require('../utils/db');
+const { dbService: { getCollection }, constructBoundedVerseQuery, constructSelectedTextPipeline, constructSelectedTextResponse } = require('../utils/db');
 
 const getBooks = () => getCollection('books').then((books) => {
     return books.find({}, { projection: { _id: 0, booknumber: 1, shortname: 1, contentsname: 1, bookname: 1, bookdesc: 1 } }).sort({ booknumber: 1 }).toArray().then((docs) => {
@@ -35,6 +35,12 @@ const getVerse = (booknumber, chapternumber, versenumber) => getCollection('vers
     });
 });
 
+const getSelectedText = (verseRanges) => getCollection('verses').then((verses) => {
+    return verses.aggregate(constructSelectedTextPipeline(verseRanges)).toArray().then((docs) => {
+        return constructSelectedTextResponse(verseRanges, docs);
+    });
+});
+
 const createFeedback = (feedbackReport) => getCollection('feedback').then((feedback) => {
     return feedback.insertOne({ ...feedbackReport, timestamp: Date.now() }).then(({ result }) => {
         return result.n;
@@ -47,5 +53,6 @@ module.exports = {
     getChapters,
     getChapter,
     getVerse,
-    createFeedback
+    createFeedback,
+    getSelectedText
 };

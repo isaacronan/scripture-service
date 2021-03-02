@@ -23,22 +23,22 @@ router.get('/:booknumber/chapters/:chapternumber', ({ params: { booknumber, chap
     getChapter(Number(booknumber), Number(chapternumber), Number(start), Number(end), !!query.numberOnly).then(checkResultsAndRespond(res, 'Invalid book or chapter!')).catch(next);
 });
 
-// router.post('/feedback', async (req, res, next) => {
-//     const feedbackReport = req.body;
+router.post('/feedback', async (req, res, next) => {
+    const feedbackReport = req.body;
 
-//     const validatedFeedbackReport = await feedbackReportSchema.validate(feedbackReport).catch(() => null);
+    const validatedFeedbackReport = await feedbackReportSchema.validate(feedbackReport).catch(() => null);
 
-//     if (!validatedFeedbackReport) {
-//         res.status(400).json({ error: 'Request format is invalid.' });
-//     } else {
-//         createFeedback(validatedFeedbackReport).then((numAdded) => {
-//             if (numAdded) {
-//                 res.json({ message: 'Report successfully submitted.' });
-//             } else {
-//                 res.status(400).json({ error: 'Report not submitted.' });
-//             }
-//         }).catch(next);
-//     }
-// });
+    if (!validatedFeedbackReport) {
+        res.status(400).json({ error: 'Request format is invalid.' });
+    } else {
+        createFeedback(validatedFeedbackReport).then((numAdded) => {
+            if (numAdded) {
+                res.json({ message: 'Report successfully submitted.' });
+            } else {
+                res.status(400).json({ error: 'Report not submitted.' });
+            }
+        }).catch(next);
+    }
+});
 
 module.exports = router;

@@ -50,12 +50,6 @@ const deleteUser = (username, password) => getCollection('users').then((users) =
     });
 });
 
-const getFavorites = (username) => getCollection('users').then((users) => {
-    return users.findOne({ username }, { projection: { _id: 0, favorites: 1 }}).then((doc) => {
-        return doc;
-    });
-});
-
 const addFavorite = (username, favorite) => getCollection('users').then((users) => {
     return users.updateOne({ username }, { $addToSet: { favorites: orderFavorite(favorite) }}).then(({ result }) => {
         return result.n;
@@ -78,7 +72,6 @@ module.exports = {
     updatePassword,
     deleteUser,
     addFavorite,
-    getFavorites,
     updateFavorites,
     REFRESH_EXP_TIME
 };

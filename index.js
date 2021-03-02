@@ -36,7 +36,7 @@ ssrRouter.use(refreshMiddleware);
 
 ssrRouter.get('/books/:booknumber', ssrMiddleware(['books', 'chapters']));
 ssrRouter.get('/books/:booknumber/chapters/:chapternumber', ssrMiddleware(['books', 'chapters', 'verses']));
-ssrRouter.get('/dashboard', ssrMiddleware(['books', 'subscriptions']));
+ssrRouter.get('/dashboard', ssrMiddleware(['books', 'subscriptions', 'favorites']));
 ssrRouter.get('/subscription/edit/:id', ssrMiddleware(['books', 'subscriptions']));
 ssrRouter.get('/subscription/:id', ssrMiddleware(['books', 'subscription']));
 ssrRouter.use(ssrMiddleware(['books']));
