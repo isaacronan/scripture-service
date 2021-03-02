@@ -4,7 +4,7 @@ const { Strategy, ExtractJwt } = require('passport-jwt');
 const passport = require('passport');
 const cookieParser = require('cookie-parser');
 
-const { SECRET, BASE_PATH, refreshMiddleware, ssrMiddleware } = require('./utils/routing');
+const { SECRET, BASE_PATH, refreshMiddleware, ssrMiddleware, rateLimitMiddleware } = require('./utils/routing');
 
 const app = express();
 const PORT = process.env.PORT || 8001;
@@ -16,6 +16,7 @@ const user = require('./routes/user');
 const apiRouter = express.Router();
 const ssrRouter = express.Router();
 
+app.use(rateLimitMiddleware());
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(BASE_PATH, express.static('static'));

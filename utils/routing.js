@@ -17,6 +17,7 @@ const TOKEN_DNE = '';
 const BASE_PATH = '/scripture';
 
 const LASTBOOK = 73;
+const MAXLENGTH = 100;
 
 const subscriptionNamePattern = /\S+/;
 const usernamePattern = /^\w+$/;
@@ -98,7 +99,7 @@ const feedbackReportValidator = async (feedbackReport) => await getVerse(
 );
 
 const updateSubscriptionSchema = yup.object().noUnknown().shape({
-    name: yup.string().matches(subscriptionNamePattern),
+    name: yup.string().matches(subscriptionNamePattern).max(MAXLENGTH),
     verseDosage: yup.number().integer().positive(),
     isChapterSubscription: yup.boolean(),
     bookPool: yup.array().of(yup.number().integer().positive().lessThan(LASTBOOK + 1)).min(1),
@@ -110,20 +111,20 @@ const updateSubscriptionSchema = yup.object().noUnknown().shape({
 });
 
 const createSubscriptionSchema = yup.object().noUnknown().shape({
-    name: yup.string().matches(subscriptionNamePattern).required(),
+    name: yup.string().matches(subscriptionNamePattern).max(MAXLENGTH).required(),
     verseDosage: yup.number().integer().positive().required(),
     isChapterSubscription: yup.boolean().required(),
     bookPool: yup.array().of(yup.number().integer().positive().lessThan(LASTBOOK + 1)).min(1).required()
 });
 
 const credentialsSchema = yup.object().noUnknown().shape({
-    username: yup.string().matches(usernamePattern).required(),
-    password: yup.string().matches(passwordPattern).required(),
+    username: yup.string().matches(usernamePattern).max(MAXLENGTH).required(),
+    password: yup.string().matches(passwordPattern).max(MAXLENGTH).required()
 });
 
 const passwordSchema = yup.object().noUnknown().shape({
-    currentPassword: yup.string().matches(passwordPattern).required(),
-    newPassword: yup.string().matches(passwordPattern).required(),
+    currentPassword: yup.string().matches(passwordPattern).max(MAXLENGTH).required(),
+    newPassword: yup.string().matches(passwordPattern).max(MAXLENGTH).required()
 });
 
 const favoriteSchema = yup.object().noUnknown().shape({
@@ -245,6 +246,26 @@ const ssrMiddleware = (necessaryDataFields = []) => async (req, res) => {
     res.send(render(req.originalUrl, prefetched));
 };
 
+const rateLimitMiddleware = () => {
+    const requestCounts = {};
+    const INTERVAL = 150000;
+    const LIMIT = 150;
+
+    return ({ ip }, res, next) => {
+        if (requestCounts[ip] >= LIMIT) {
+            res.status(429).json({ error: 'Rate limit reached.' });
+        } else {
+            if (!requestCounts[ip]) {
+                setTimeout(() => {
+                    delete requestCounts[ip];
+                }, INTERVAL);
+            }
+            requestCounts[ip] = (requestCounts[ip] || 0) + 1;
+            next();
+        }
+    };
+}
+
 module.exports = {
     SECRET,
     checkResultsAndRespond,
@@ -264,5 +285,6 @@ module.exports = {
     BASE_PATH,
     refreshMiddleware,
     generateSubscriptionId,
-    ssrMiddleware
+    ssrMiddleware,
+    rateLimitMiddleware
 };
