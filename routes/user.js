@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, getFavorites, updateFavorites, REFRESH_EXP_TIME } = require('../queries/user');
+const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, updateFavorites, REFRESH_EXP_TIME } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
 const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies, refreshMiddleware } = require('../utils/routing');
 const { getSelectedText } = require('../queries/text');
@@ -122,16 +122,9 @@ router.post('/favorites', authenticate, async (req, res, next) => {
 });
 
 router.get('/favorites', authenticate, (req, res, next) => {
-    getFavorites(req.user.username).then(async (doc) => {
+    getUserAuthInfo(req.user.username).then(async (doc) => {
         const { favorites: favoritesRanges } = doc;
-        const selectedText = favoritesRanges.length ? await getSelectedText(favoritesRanges) : [];
-        const favorites = favoritesRanges.map((favoritesRange) => ({
-            ...favoritesRange,
-            verses: selectedText
-                .find(({ booknumber }) => booknumber === favoritesRange.booknumber).chapters
-                .find(({ chapternumber }) => chapternumber === favoritesRange.chapternumber).verses
-                .filter(({ versenumber }) => versenumber >= favoritesRange.start && versenumber <= favoritesRange.end)
-        }));
+        const favorites = favoritesRanges.length ? await getSelectedText(favoritesRanges) : [];
         res.json(favorites);
     }).catch(next);
 });

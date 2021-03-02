@@ -1,4 +1,4 @@
-const { dbService: { getCollection }, constructBoundedVerseQuery } = require('../utils/db');
+const { dbService: { getCollection }, constructBoundedVerseQuery, constructSelectedTextPipeline, constructSelectedTextResponse } = require('../utils/db');
 
 const getBooks = () => getCollection('books').then((books) => {
     return books.find({}, { projection: { _id: 0, booknumber: 1, shortname: 1, contentsname: 1, bookname: 1, bookdesc: 1 } }).sort({ booknumber: 1 }).toArray().then((docs) => {
@@ -36,29 +36,8 @@ const getVerse = (booknumber, chapternumber, versenumber) => getCollection('vers
 });
 
 const getSelectedText = (verseRanges) => getCollection('verses').then((verses) => {
-    return verses.aggregate([
-        { $match: { $or: [
-            ...verseRanges.map(({ booknumber, chapternumber, start, end }) => ({ $and: [
-                { booknumber, chapternumber }, { versenumber: { $gte: start }}, { versenumber: { $lte: end }}
-            ]}))
-        ]}},
-        { $sort: { versenumber: 1 }},
-        { $project: { _id: false }},
-        { $group: {
-            _id: { booknumber: '$booknumber', chapternumber: '$chapternumber' },
-            verses: { $push: '$$ROOT' }
-        }},
-        { $group: {
-            _id: { booknumber: '$_id.booknumber' },
-            chapters: { $push: { chapternumber: '$_id.chapternumber', verses: '$verses' } }
-        }},
-        { $project: {
-            _id: false,
-            booknumber: '$_id.booknumber',
-            chapters: '$chapters'
-        }}
-    ]).toArray().then((docs) => {
-        return docs;
+    return verses.aggregate(constructSelectedTextPipeline(verseRanges)).toArray().then((docs) => {
+        return constructSelectedTextResponse(verseRanges, docs);
     });
 });
 

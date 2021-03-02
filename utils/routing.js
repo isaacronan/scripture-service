@@ -5,8 +5,8 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
-const { getVerse, getBooks, getChapters, getChapter } = require('../queries/text');
-const { getFavorites, REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken } = require('../queries/user');
+const { getVerse, getBooks, getChapters, getChapter, getSelectedText } = require('../queries/text');
+const { REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken, getUserAuthInfo } = require('../queries/user');
 const { getSubscription, getSubscriptions, getCurrentIssue } = require('../queries/subscriptions');
 
 const ssr = require('../ssr/scripture-ssr');
@@ -78,7 +78,7 @@ const constructFavoriteComparator = (favoriteA) => (favoriteB) => (
 );
 
 const favoritesExistenceValidator = (username) => async (favorites) => {
-    const { favorites: existingFavorites } = await getFavorites(username);
+    const { favorites: existingFavorites } = await getUserAuthInfo(username);
     const favoriteIsNotExisting = favorite => existingFavorites.findIndex(constructFavoriteComparator(favorite)) === -1;
 
     return favorites.filter(favoriteIsNotExisting).length === 0;
@@ -201,7 +201,8 @@ const ssrMiddleware = (necessaryDataFields = []) => async (req, res) => {
         chapters: getChapters(Number(booknumber)),
         verses: getChapter(Number(booknumber), Number(chapternumber)),
         subscriptions: getSubscriptions(username),
-        subscription: getSubscription(username, id)
+        subscription: getSubscription(username, id),
+        favorites: getUserAuthInfo(username).then((user) => user?.favorites)
     };
     const necessarySources = necessaryDataFields.map(field => dataSources[field]);
     
@@ -210,7 +211,8 @@ const ssrMiddleware = (necessaryDataFields = []) => async (req, res) => {
         chapters,
         verses,
         subscriptions,
-        subscription
+        subscription,
+        favorites
     } = (await Promise.all(necessarySources)).reduce((acc, data, index) => ({ ...acc, [necessaryDataFields[index]]: data }), {});
 
     const prefetched = { token };
@@ -233,6 +235,11 @@ const ssrMiddleware = (necessaryDataFields = []) => async (req, res) => {
     if (subscription) {
         prefetched.subscription = subscription.currentIssue === null ?
             { ...subscription, books: [], nextIssue: null } : await getCurrentIssue(subscription);
+    }
+
+    if (favorites) {
+        prefetched.favorites = favorites.length ?
+            await getSelectedText(favorites) : [];
     }
 
     res.send(render(req.originalUrl, prefetched));

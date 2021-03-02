@@ -161,6 +161,43 @@ const constructIssuePipeline = (subscription) => (subscription.isChapterSubscrip
 const constructIssueResponse = (subscription, docs) => (subscription.isChapterSubscription ?
     constructChapterIssueResponse : constructVerseIssueResponse)(subscription, docs);
 
+const constructSelectedTextPipeline = (verseRanges) => {
+    const pipeline = [
+        { $match: { $or: [
+            ...verseRanges.map(({ booknumber, chapternumber, start, end }) => ({ $and: [
+                { booknumber, chapternumber }, { versenumber: { $gte: start }}, { versenumber: { $lte: end }}
+            ]}))
+        ]}},
+        { $sort: { versenumber: 1 }},
+        { $project: { _id: false }},
+        { $group: {
+            _id: { booknumber: '$booknumber', chapternumber: '$chapternumber' },
+            verses: { $push: '$$ROOT' }
+        }},
+        { $group: {
+            _id: { booknumber: '$_id.booknumber' },
+            chapters: { $push: { chapternumber: '$_id.chapternumber', verses: '$verses' } }
+        }},
+        { $project: {
+            _id: false,
+            booknumber: '$_id.booknumber',
+            chapters: '$chapters'
+        }}
+    ];
+
+    return pipeline
+};
+
+const constructSelectedTextResponse = (verseRanges, docs) => {
+    return verseRanges.map((verseRange) => ({
+        ...verseRange,
+        verses: docs
+            .find(({ booknumber }) => booknumber === verseRange.booknumber).chapters
+            .find(({ chapternumber }) => chapternumber === verseRange.chapternumber).verses
+            .filter(({ versenumber }) => versenumber >= verseRange.start && versenumber <= verseRange.end)
+    }));
+};
+
 const constructCurrentIssue = (subscription) => ({
     currentBook: subscription.bookPool[0],
     currentChapter: 1,
@@ -188,5 +225,7 @@ module.exports = {
     dbService,
     constructBoundedVerseQuery,
     orderFavorite,
-    orderFavorites
+    orderFavorites,
+    constructSelectedTextPipeline,
+    constructSelectedTextResponse
 };
