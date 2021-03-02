@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { getUserAuthInfo, createUserAccount, createRefreshToken, getRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, updateFavorites, REFRESH_EXP_TIME } = require('../queries/user');
+const { getUserAuthInfo, createUserAccount, createRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, updateFavorites } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
 const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies, refreshMiddleware } = require('../utils/routing');
 const { getSelectedText } = require('../queries/text');
