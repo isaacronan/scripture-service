@@ -19,7 +19,7 @@ const ssrRouter = express.Router();
 app.use(rateLimitMiddleware());
 app.use(cookieParser());
 app.use(passport.initialize());
-app.use(BASE_PATH, express.static('static'));
+app.use(BASE_PATH, express.static('static', { redirect: false }));
 app.use(`${BASE_PATH}/api`, apiRouter);
 app.use(BASE_PATH, ssrRouter);
 
