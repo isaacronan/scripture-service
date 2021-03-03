@@ -28,7 +28,7 @@ router.post('/login', (req, res, next) => {
 
 router.get('/logout', authenticate, (req, res, next) => {
     const { refresh = null } = req.cookies;
-    deleteExpiredRefreshTokens(req.user.username, refresh).then(() => {
+    deleteExpiredRefreshTokens(res.locals.username, refresh).then(() => {
         unsetRefreshCookies(res);
         res.json({ message: 'User is deauthenticated.' });
     }).catch(next);
@@ -75,9 +75,9 @@ router.put('/password', authenticate, async (req, res, next) => {
     if (!isValid) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        const { salt } = await getUserAuthInfo(req.user.username);
+        const { salt } = await getUserAuthInfo(res.locals.username);
         const { currentPassword, newPassword } = passwordSchema.cast(passwords);
-        updatePassword(req.user.username, hashPassword(currentPassword, salt), hashPassword(newPassword, salt)).then((numUpdated) => {
+        updatePassword(res.locals.username, hashPassword(currentPassword, salt), hashPassword(newPassword, salt)).then((numUpdated) => {
             if (!numUpdated) {
                 res.status(400).json({ error: 'Credentials don\'t match.' });
             } else {
@@ -89,12 +89,12 @@ router.put('/password', authenticate, async (req, res, next) => {
 
 router.post('/delete', authenticate, async (req, res, next) => {
     const { password } = req.body;
-    const { salt } = await getUserAuthInfo(req.user.username);
+    const { salt } = await getUserAuthInfo(res.locals.username);
 
-    deleteUser(req.user.username, hashPassword(password, salt)).then(async (numDeleted) => {
+    deleteUser(res.locals.username, hashPassword(password, salt)).then(async (numDeleted) => {
         if (numDeleted) {
-            await deleteAllRefreshTokens(req.user.username);
-            await deleteSubscriptions(req.user.username);
+            await deleteAllRefreshTokens(res.locals.username);
+            await deleteSubscriptions(res.locals.username);
             unsetRefreshCookies(res);
             res.json({ message: 'User successfully deleted.' });
         } else {
@@ -111,7 +111,7 @@ router.post('/favorites', authenticate, async (req, res, next) => {
     if (!validatedFavorite) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        addFavorite(req.user.username, validatedFavorite).then((numUpdated) => {
+        addFavorite(res.locals.username, validatedFavorite).then((numUpdated) => {
             if (numUpdated) {
                 res.json({ message: 'Favorite successfully added.' });
             } else {
@@ -122,7 +122,7 @@ router.post('/favorites', authenticate, async (req, res, next) => {
 });
 
 router.get('/favorites', authenticate, (req, res, next) => {
-    getUserAuthInfo(req.user.username).then(async (doc) => {
+    getUserAuthInfo(res.locals.username).then(async (doc) => {
         const { favorites: favoritesRanges } = doc;
         const favorites = favoritesRanges.length ? await getSelectedText(favoritesRanges) : [];
         res.json(favorites);
@@ -132,12 +132,12 @@ router.get('/favorites', authenticate, (req, res, next) => {
 router.put('/favorites', authenticate, async (req, res, next) => {
     const favorites = req.body;
 
-    const validatedFavorites = await favoritesSchema(req.user.username).validate(favorites).catch(() => null);
+    const validatedFavorites = await favoritesSchema(res.locals.username).validate(favorites).catch(() => null);
 
     if (!validatedFavorites) {
         res.status(400).json({ error: 'Request format is invalid.' });
     } else {
-        updateFavorites(req.user.username, validatedFavorites).then((numUpdated) => {
+        updateFavorites(res.locals.username, validatedFavorites).then((numUpdated) => {
             if (!numUpdated) {
                 res.status(400).json({ error: 'Favorites not updated.' });
             } else {

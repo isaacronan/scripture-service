@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
-const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const yup = require('yup');
 
@@ -53,7 +52,23 @@ const unsetRefreshCookies = (res) => {
 
 const sign = payload => jwt.sign(payload, SECRET, { expiresIn: JWT_EXP_TIME });
 
-const authenticate = passport.authenticate('jwt', { session: false });
+const authenticate = (req, res, next) => {
+    const header = req.get('Authorization');
+    const pattern = /^Bearer (\S+)$/;
+    if (!header || !pattern.test(header)) {
+        res.status(401).json({ error: 'No token found.' });
+    } else {
+        const token = pattern.exec(header)[1];
+        jwt.verify(token, SECRET, (err, decoded) => {
+            if (err) {
+                res.status(401).json({ error: 'Token is invalid.' });
+            } else {
+                res.locals.username = decoded.username;
+                next();
+            }
+        });
+    }
+};
 
 const issueValidator = async (issue) => !issue || await getVerse(
     issue.currentBook,

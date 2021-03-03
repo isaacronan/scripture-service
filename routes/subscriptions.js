@@ -7,14 +7,14 @@ const { getCurrentIssue, getSubscriptions, getSubscription, createSubscription, 
 router.use(express.json());
 
 router.get('/', authenticate, (req, res, next) => {
-    const { username } = req.user;
+    const { username } = res.locals;
     getSubscriptions(username).then((docs) => {
         res.json(docs);
     }).catch(next);
 });
     
 router.post('/', authenticate, async (req, res, next) => {
-    const { username } = req.user;
+    const { username } = res.locals;
     const subscription = req.body;
 
     const validatedSubscription = await createSubscriptionSchema.validate(subscription).catch(() => null);
@@ -36,7 +36,7 @@ router.post('/', authenticate, async (req, res, next) => {
 });
 
 router.put('/:id', authenticate, async (req, res, next) => {
-    const { username } = req.user;
+    const { username } = res.locals;
     const subscription = req.body;
     const { id } = req.params;
 
@@ -56,7 +56,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
 });
 
 router.delete('/:id', authenticate, (req, res, next) => {
-    const { username } = req.user;
+    const { username } = res.locals;
     const { id } = req.params;
 
     deleteSubscription(username, id).then((numDeleted) => {
@@ -69,7 +69,7 @@ router.delete('/:id', authenticate, (req, res, next) => {
 });
 
 router.get('/:id', authenticate, (req, res, next) => {
-    const { username } = req.user;
+    const { username } = res.locals;
     const { id } = req.params;
 
     getSubscription(username, id).then(async (subscription) => {
