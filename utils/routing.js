@@ -7,6 +7,7 @@ const yup = require('yup');
 const { getVerse, getBooks, getChapters, getChapter, getSelectedText } = require('../queries/text');
 const { REFRESH_EXP_TIME, getRefreshToken, deleteExpiredRefreshTokens, createRefreshToken, getUserAuthInfo } = require('../queries/user');
 const { getSubscription, getSubscriptions, getCurrentIssue } = require('../queries/subscriptions');
+const { logger } = require('./misc');
 
 const ssr = require('../ssr/scripture-ssr');
 
@@ -63,6 +64,7 @@ const authenticate = (req, res, next) => {
             if (err) {
                 res.status(401).json({ error: 'Token is invalid.' });
             } else {
+                logger(`user authenticated as ${decoded.username}`);
                 res.locals.username = decoded.username;
                 next();
             }
@@ -194,6 +196,7 @@ const refreshMiddleware = (req, res, next) => {
                 await deleteExpiredRefreshTokens(username, existingRefresh);
                 await createRefreshToken(username, refresh);
                 setRefreshCookies(res, username, refresh);
+                logger(`refreshed user ${username}`);
                 res.locals.refresh = { username, token: token, message: 'New token successfully obtained.' };
             } else {
                 res.locals.refresh = { token: TOKEN_DNE, message: 'Refresh token is invalid.' };
@@ -268,6 +271,7 @@ const rateLimitMiddleware = () => {
 
     return ({ ip }, res, next) => {
         if (requestCounts[ip] >= LIMIT) {
+            logger(`${ip} reached rate limit`);
             res.status(429).json({ error: 'Rate limit reached.' });
         } else {
             if (!requestCounts[ip]) {
@@ -279,7 +283,14 @@ const rateLimitMiddleware = () => {
             next();
         }
     };
-}
+};
+
+const loggerMiddleware = (req, _, next) => {
+    const { method, ip, originalUrl } = req;
+    logger(`${ip} ${method} ${originalUrl}`);
+
+    next();
+};
 
 module.exports = {
     SECRET,
@@ -301,5 +312,6 @@ module.exports = {
     refreshMiddleware,
     generateSubscriptionId,
     ssrMiddleware,
-    rateLimitMiddleware
+    rateLimitMiddleware,
+    loggerMiddleware
 };

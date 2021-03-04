@@ -3,6 +3,7 @@ const router = express.Router();
 
 const { getBooks, getBook, getChapters, getChapter, createFeedback } = require('../queries/text');
 const { checkResultsAndRespond, feedbackReportSchema } = require('../utils/routing');
+const { logger } = require('../utils/misc');
 
 router.use(express.json());
 
@@ -33,6 +34,7 @@ router.post('/feedback', async (req, res, next) => {
     } else {
         createFeedback(validatedFeedbackReport).then((numAdded) => {
             if (numAdded) {
+                logger('created feedback report');
                 res.json({ message: 'Report successfully submitted.' });
             } else {
                 res.status(400).json({ error: 'Report not submitted.' });

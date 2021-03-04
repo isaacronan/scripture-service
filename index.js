@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 
-const { BASE_PATH, refreshMiddleware, ssrMiddleware, rateLimitMiddleware } = require('./utils/routing');
+const { BASE_PATH, refreshMiddleware, ssrMiddleware, rateLimitMiddleware, loggerMiddleware } = require('./utils/routing');
 
 const app = express();
 const PORT = process.env.PORT || 8001;
@@ -14,6 +14,7 @@ const user = require('./routes/user');
 const apiRouter = express.Router();
 const ssrRouter = express.Router();
 
+app.use(loggerMiddleware);
 app.use(rateLimitMiddleware());
 app.use(cookieParser());
 app.use(BASE_PATH, express.static('static', { redirect: false }));

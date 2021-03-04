@@ -4,6 +4,7 @@ const router = express.Router();
 const { getUserAuthInfo, createUserAccount, createRefreshToken, deleteAllRefreshTokens, deleteExpiredRefreshTokens, updatePassword, deleteUser, addFavorite, updateFavorites } = require('../queries/user');
 const { deleteSubscriptions } = require('../queries/subscriptions');
 const { sign, authenticate, credentialsSchema, passwordSchema, generateRandom, hashPassword, favoriteSchema, favoritesSchema, setRefreshCookies, unsetRefreshCookies, refreshMiddleware } = require('../utils/routing');
+const { logger } = require('../utils/misc');
 const { getSelectedText } = require('../queries/text');
 
 router.use(express.json());
@@ -19,6 +20,7 @@ router.post('/login', (req, res, next) => {
             await deleteExpiredRefreshTokens(username);
             await createRefreshToken(username, refresh);
             setRefreshCookies(res, username, refresh);
+            logger(`logged in user ${username}`);
             res.json({ message: 'Successful login!', token });
         } else {
             res.status(400).json({ error: 'Credentials don\'t match!' })
@@ -29,6 +31,7 @@ router.post('/login', (req, res, next) => {
 router.get('/logout', authenticate, (req, res, next) => {
     const { refresh = null } = req.cookies;
     deleteExpiredRefreshTokens(res.locals.username, refresh).then(() => {
+        logger(`logged out user ${res.locals.username}`);
         unsetRefreshCookies(res);
         res.json({ message: 'User is deauthenticated.' });
     }).catch(next);
@@ -60,6 +63,7 @@ router.post('/create', async (req, res, next) => {
                 const salt = await generateRandom();
                 const hashedPassword = hashPassword(password, salt);
                 createUserAccount(username, hashedPassword, salt).then(() => {
+                    logger(`created new user ${username}`);
                     res.json({ message: 'Account created.' });
                 });
             }
@@ -81,6 +85,7 @@ router.put('/password', authenticate, async (req, res, next) => {
             if (!numUpdated) {
                 res.status(400).json({ error: 'Credentials don\'t match.' });
             } else {
+                logger(`updated password for user ${res.locals.username}`);
                 res.json({ message: 'Password successfully updated.' });
             }
         }).catch(next);
@@ -96,6 +101,7 @@ router.post('/delete', authenticate, async (req, res, next) => {
             await deleteAllRefreshTokens(res.locals.username);
             await deleteSubscriptions(res.locals.username);
             unsetRefreshCookies(res);
+            logger(`deleted user ${res.locals.username}`);
             res.json({ message: 'User successfully deleted.' });
         } else {
             res.status(400).json({ error: 'Credentials don\'t match.' });
@@ -113,6 +119,7 @@ router.post('/favorites', authenticate, async (req, res, next) => {
     } else {
         addFavorite(res.locals.username, validatedFavorite).then((numUpdated) => {
             if (numUpdated) {
+                logger(`added favorite for user ${res.locals.username}`);
                 res.json({ message: 'Favorite successfully added.' });
             } else {
                 res.status(400).json({ error: 'Favorite not added.' });
@@ -141,6 +148,7 @@ router.put('/favorites', authenticate, async (req, res, next) => {
             if (!numUpdated) {
                 res.status(400).json({ error: 'Favorites not updated.' });
             } else {
+                logger(`updated favorites for user ${res.locals.username}`);
                 res.json({ message: 'Favorites successfully updated.' });
             }
         }).catch(next);

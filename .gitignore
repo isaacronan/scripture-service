@@ -2,3 +2,4 @@ static/
 ssr/
 node_modules/
 .env
+*.log

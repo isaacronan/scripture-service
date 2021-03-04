@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authenticate, updateSubscriptionSchema, createSubscriptionSchema, generateSubscriptionId } = require('../utils/routing');
+const { logger } = require('../utils/misc');
 const { getCurrentIssue, getSubscriptions, getSubscription, createSubscription, updateSubscription, deleteSubscription } = require('../queries/subscriptions');
 
 router.use(express.json());
@@ -27,6 +28,7 @@ router.post('/', authenticate, async (req, res, next) => {
             res.status(500).json({ error: 'Subscription ID could not be generated.' });
         } else createSubscription(username, validatedSubscription, id).then((id) => {
             if (id) {
+                logger(`created subscription ${id} for user ${username}`);
                 res.json({ message: 'Subscription created.', id });
             } else {
                 res.status(400).json({ error: 'Subscription not created.' });
@@ -47,6 +49,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
     } else {
         updateSubscription(username, id, validatedSubscription).then((numUpdated) => {
             if (numUpdated) {
+                logger(`updated subscription ${id} for user ${username}`);
                 res.json({ message: 'Subscription updated.' });
             } else {
                 res.status(400).json({ error: 'Subscription not updated.' });
@@ -61,6 +64,7 @@ router.delete('/:id', authenticate, (req, res, next) => {
 
     deleteSubscription(username, id).then((numDeleted) => {
         if (numDeleted) {
+            logger(`deleted subscription ${id} for user ${username}`);
             res.json({ message: 'Subscription deleted.' });
         } else {
             res.status(400).json({ error: 'Subscription not deleted.' });
