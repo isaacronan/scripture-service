@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const { LOGPATH } = process.env;
 const logStream = LOGPATH ? fs.createWriteStream(path.resolve(__dirname, LOGPATH, 'scripture.log'), { flags: 'a' }) : process.stdout;
 
