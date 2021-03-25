@@ -269,25 +269,27 @@ const rateLimitMiddleware = () => {
     const INTERVAL = 150000;
     const LIMIT = 150;
 
-    return ({ ip }, res, next) => {
-        if (requestCounts[ip] >= LIMIT) {
-            logger(`${ip} reached rate limit`);
+    return ({ ip, ips }, res, next) => {
+        const clientIP = ips.length ? ips[0] : ip;
+        if (requestCounts[clientIP] >= LIMIT) {
+            logger(`${clientIP} reached rate limit`);
             res.status(429).json({ error: 'Rate limit reached.' });
         } else {
-            if (!requestCounts[ip]) {
+            if (!requestCounts[clientIP]) {
                 setTimeout(() => {
-                    delete requestCounts[ip];
+                    delete requestCounts[clientIP];
                 }, INTERVAL);
             }
-            requestCounts[ip] = (requestCounts[ip] || 0) + 1;
+            requestCounts[clientIP] = (requestCounts[clientIP] || 0) + 1;
             next();
         }
     };
 };
 
 const loggerMiddleware = (req, _, next) => {
-    const { method, ip, originalUrl } = req;
-    logger(`${ip} ${method} ${originalUrl}`);
+    const { method, ip, ips, originalUrl } = req;
+    const clientIP = ips.length ? ips[0] : ip;
+    logger(`${clientIP} ${method} ${originalUrl}`);
 
     next();
 };

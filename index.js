@@ -14,6 +14,7 @@ const user = require('./routes/user');
 const apiRouter = express.Router();
 const ssrRouter = express.Router();
 
+app.set('trust proxy', true);
 app.use(loggerMiddleware);
 app.use(rateLimitMiddleware());
 app.use(cookieParser());
