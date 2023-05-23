@@ -3,3 +3,4 @@ ssr/
 node_modules/
 .env
 *.log
+run.sh
