@@ -105,7 +105,7 @@ const constructChapterIssuePipeline = (subscription) => {
                 { booknumber: currentBook, chapternumber: { $gte: currentChapter }},
             ]}
         ]}},
-        { $sort: { booknumber: 1, chapternumber: 1 }},
+        { $sort: { booknumber: 1, chapternumber: 1, versenumber: 1 }},
         { $project: { _id: false }},
         { $group: {
             _id: { booknumber: '$booknumber', chapternumber: '$chapternumber' },
